@@ -115,7 +115,8 @@ async def fetch_CIK(ticker_dict, session):  # we hit our own API to get the CIK 
 
 async def add_CIKs(tickers):  # This takes the dictionary and adds the CIKs to it that we will use to get the fillings from the SEC API in the next step
     tasks = []  # tickers has the format [ {'ticker:'ACIU','gain': 19, 'price': 3},{'ticker''ADGM','gain': 34, 'price': 3} ]
-    async with aiohttp.ClientSession() as session:  # we keep the same session for all the requests and pass it on to the individual calls
+    conn = aiohttp.TCPConnector(limit_per_host=5)
+    async with aiohttp.ClientSession(connector=conn) as session:  # we keep the same session for all the requests and pass it on to the individual calls
         for ticker_dict in tickers:  #
             tasks.append(fetch_CIK(ticker_dict, session))  # assembles all the tasks and then triggers them with asyncio.gather
         results = await asyncio.gather(*tasks)
@@ -123,17 +124,23 @@ async def add_CIKs(tickers):  # This takes the dictionary and adds the CIKs to i
         return tickers
 
 
-async def get_filling(ticker_dict, session, days_limit=30):  # we hit the SEC API to get the fillings from 30 days that has EFFECT or S-1
-    today = datetime.date.today()  # ticker_dict has format {ticker:AAPL,price:X,gain:Y,CIK:Z}
+async def get_filling(ticker_dict,session,days_limit=30):  # we hit the SEC API to get the fillings from 30 days that has EFFECT or S-1
+    today = datetime.date.today()                             # ticker_dict has format {ticker:AAPL,price:X,gain:Y,CIK:Z}
     one_month_ago = today - datetime.timedelta(days=days_limit)
-    url = f"https://efts.sec.gov/LATEST/search-index?q=EFFECT%20S-1&ciks={ticker_dict['CIK']}&startdt={one_month_ago.isoformat()}&enddt={today.isoformat()}"
+    url = f"https://efts.sec.gov/LATEST/search-index?q=EFFECT%20S-1&ciks={str(ticker_dict['CIK']).zfill(10)}&startdt={one_month_ago.isoformat()}&enddt={today.isoformat()}"
     response = await session.get(url)
     api_response = await response.json()
     hits = int(api_response['hits']['total']['value'])
-    if (not hits):  # this means there is no fillings of this ticker in the past 30 days that has S-1 or EFFECT
-        return  # returns NONE here that gets filtered on the function that called it
-    email_hyperlink = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker_dict["CIK"]}&owner=exclude&count=40'
-    return {ticker_dict['ticker']: email_hyperlink}
+    forms = api_response['hits']['hits']
+    if (ticker_dict['ticker'] == 'LB'):
+        print(f'THIS IS KOD IT RETURNED {hits} and {url}')
+    if(not hits): # this means there is no fillings of this ticker in the past 30 days that has S-1 or EFFECT
+       return # returns NONE here that gets filtered on the function that called it
+    for form in forms: # if forms are returns we check if they match EFFECT or S-1
+        if ('EFFECT' in form['_source']['form'] or 'S-1' in form['_source']['form']):
+            email_hyperlink = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker_dict["CIK"]}&owner=exclude&count=40'
+            return {ticker_dict['ticker']: email_hyperlink}
+    return
 
 
 async def get_all_fillings(tickers): # the function responsible for bundling the async API requests to the SEC API, each single call is made through function get_filling
@@ -143,7 +150,8 @@ async def get_all_fillings(tickers): # the function responsible for bundling the
         'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8,fr;q=0.7',
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
     }
-    async with aiohttp.ClientSession(headers=headers) as session:
+    conn = aiohttp.TCPConnector(limit_per_host=5)
+    async with aiohttp.ClientSession(headers=headers,connector=conn) as session:
         for ticker_dict in tickers:
             tasks.append(get_filling(ticker_dict, session))  # ticker is a dict {ticker:'AAPL',CIK:013494343,gain:14,price:5}
         results = await asyncio.gather(*tasks)  # returns a list of suc [ { 'QNTM': 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1771885&owner=exclude&count=40'}, None (means no fillings were found for that api requests) , {'SG': 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1477815&owner=exclude&count=40'} ]
@@ -164,8 +172,4 @@ async def play():
 
 if __name__ == '__main__':
     asyncio.run(bot_start())
-
-
-
-
 
