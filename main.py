@@ -24,7 +24,7 @@ async def on_ready():
     start = datetime.time.fromisoformat('07:00:00')
     nyc_close_time = datetime.time.fromisoformat('20:00:00')
     previously_notified= set()
-    await channel.send('Starting')
+    await channel.send('Starting <@253660472803328002>')
     iteration = 0
     while (True):
         try:
@@ -37,6 +37,7 @@ async def on_ready():
                 try:
                   dict_worth_watching = await play()  # one dict with all tickers as keys {'UAVS': 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40','QUBT': 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40'}
                 except Exception:
+                  await channel.send('<@253660472803328002>')
                   await channel.send(f'A problem has been encountered in fetching logic: \n```{traceback.format_exc()[-1700:]}``` \nSleeping for 10 mins after failed fetched attempt at {datetime.datetime.now().time().strftime("%H:%M:%S")}')
                   print(f'Problem encountered with the logi \nSleeping for 10 mins after failed fetched attempt at {datetime.datetime.now().time().strftime("%H:%M:%S")}')
                   await asyncio.sleep(60*10)
@@ -48,6 +49,8 @@ async def on_ready():
                 final_dict = dict()
                 for ticker in set_non_notified:
                     final_dict.update({ticker:dict_worth_watching[ticker]})
+                if not final_dict:
+                    await channel.send('<@253660472803328002>')
                 for ticker, link in final_dict.items():
                     await channel.send(f'- [{ticker}]({link})')
                 previously_notified = previously_notified.union(set_non_notified)
@@ -63,6 +66,7 @@ async def on_ready():
                 print(f'Sleeping for 30mins in Premarket, time is {datetime.datetime.now().time().strftime("%H:%M:%S")}')
                 await asyncio.sleep(60*30)
         except Exception:
+            await channel.send('<@253660472803328002>')
             await channel.send('Problem encountered in outside the fetch logic: \n' + '```' + traceback.format_exc()[-1700:] + '```' +'\n\nSleeping for 10 mins after failed fetched attempt at ' + datetime.datetime.now().time().strftime("%H:%M:%S"))
             print('Problem encountered in outside the fetch logic, Sleeping for 10min')
             await asyncio.sleep(60 * 10)
@@ -82,7 +86,6 @@ async def bot_start():
 
 
 def premarket_gainers(price_limit=1):
-    print('inside premarket gainers')
     url = "https://quotes-gw.webullfintech.com/api/bgw/market/topGainers?regionId=6&pageIndex=1&pageSize=100"
     headers = {
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36', }
