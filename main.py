@@ -106,7 +106,7 @@ def premarket_gainers(price_limit=1):
 
 
 async def fetch_CIK(ticker_dict, session):  # we hit our own API to get the CIK then we added it to the dic;
-    response = await session.get(f'https://sec.visas.tn/{ticker_dict["ticker"]}')  # {'ticker':'APPL',price:X,gain:Y,CIK:0123231} } we get key AAPL as k and the dict {price:X,gain:Y} as parameter ticker_dict
+    response = await session.get(f'https://sec.visas.tn/{ticker_dict["ticker"]}',ssl=False)  # {'ticker':'APPL',price:X,gain:Y,CIK:0123231} } we get key AAPL as k and the dict {price:X,gain:Y} as parameter ticker_dict
     response.raise_for_status()
     api_response = await response.json()
     ticker_dict['CIK'] = api_response['CIK']
@@ -128,12 +128,10 @@ async def get_filling(ticker_dict,session,days_limit=30):  # we hit the SEC API 
     today = datetime.date.today()                             # ticker_dict has format {ticker:AAPL,price:X,gain:Y,CIK:Z}
     one_month_ago = today - datetime.timedelta(days=days_limit)
     url = f"https://efts.sec.gov/LATEST/search-index?q=EFFECT%20S-1&ciks={str(ticker_dict['CIK']).zfill(10)}&startdt={one_month_ago.isoformat()}&enddt={today.isoformat()}"
-    response = await session.get(url)
+    response = await session.get(url,ssl=False)
     api_response = await response.json()
     hits = int(api_response['hits']['total']['value'])
     forms = api_response['hits']['hits']
-    if (ticker_dict['ticker'] == 'LB'):
-        print(f'THIS IS KOD IT RETURNED {hits} and {url}')
     if(not hits): # this means there is no fillings of this ticker in the past 30 days that has S-1 or EFFECT
        return # returns NONE here that gets filtered on the function that called it
     for form in forms: # if forms are returns we check if they match EFFECT or S-1
