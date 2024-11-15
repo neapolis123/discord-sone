@@ -32,7 +32,6 @@ async def on_ready():
             if start <= nyc_time <= nyc_close_time:
                 iteration += 1
                 print(iteration)
-                print(f'Previous notified set is {previously_notified}')
                 dict_worth_watching = {}
                 try:
                   dict_worth_watching = await play()  # one dict with all tickers as keys {'UAVS': 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40','QUBT': 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40'}
@@ -49,6 +48,7 @@ async def on_ready():
                 final_dict = dict()
                 for ticker in set_non_notified:   #after having the list of tickers to be notified ( that werent previously notified ) we put them all in a one dict as we received them from the logic in play() {'AAPL':'https://linktothefilling.com','NFTLX':'https://link.com'},
                     final_dict.update({ticker:dict_worth_watching[ticker]})
+                print(f'Previous notified set is {previously_notified}')
                 if final_dict:   #If there are tickers to be notified 
                     await channel.send('<@253660472803328002>')     #tag me 
                     for ticker, link in final_dict.items():           #this is for formating so that each ticker send on chat is a hyperlink linking to the fillings 
