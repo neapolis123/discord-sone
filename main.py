@@ -49,7 +49,7 @@ async def on_ready():
                 final_dict = dict()
                 for ticker in set_non_notified:
                     final_dict.update({ticker:dict_worth_watching[ticker]})
-                if not final_dict:
+                if final_dict:
                     await channel.send('<@253660472803328002>')
                 for ticker, link in final_dict.items():
                     await channel.send(f'- [{ticker}]({link})')
