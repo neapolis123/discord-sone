@@ -40,7 +40,7 @@ async def on_ready():
                   await channel.send('<@253660472803328002>')
                   await channel.send(f'A problem has been encountered in fetching logic: \n```{traceback.format_exc()[-1700:]}``` \nSleeping for 10 mins after failed fetched attempt at {datetime.datetime.now().time().strftime("%H:%M:%S")}')
                   print(f'Problem encountered with the logi \nSleeping for 10 mins after failed fetched attempt at {datetime.datetime.now().time().strftime("%H:%M:%S")}')
-                  await asyncio.sleep(60*10)
+                  await asyncio.sleep(60*30)
                   continue
                 set_of_dict_from_logic = set(dict_worth_watching.keys())  # in order to check if we already notified these tickers we have to turn the keys into a set and compared them to the set of the previously notified tickers
                 print(f'Full returned set is {set_of_dict_from_logic}')
@@ -51,11 +51,11 @@ async def on_ready():
                     final_dict.update({ticker:dict_worth_watching[ticker]})
                 if final_dict:
                     await channel.send('<@253660472803328002>')
-                for ticker, link in final_dict.items():
-                    await channel.send(f'- [{ticker}]({link})')
-                previously_notified = previously_notified.union(set_non_notified)
+                    for ticker, link in final_dict.items():
+                        await channel.send(f'- [{ticker}]({link})')
+                    previously_notified = previously_notified.union(set_non_notified)
+                    print('Done sending messages')
                 print(f'New set of notified set is {previously_notified}')
-                print('Done sending messages')
                 print(f'Sleeping for 30 mins starting at {datetime.datetime.now().time().strftime("%H:%M:%S")}')
                 await asyncio.sleep(60*30 )  # every 30 mins
             if nyc_time >= nyc_close_time: # we reset the notified ticker after close
@@ -69,7 +69,7 @@ async def on_ready():
             await channel.send('<@253660472803328002>')
             await channel.send('Problem encountered in outside the fetch logic: \n' + '```' + traceback.format_exc()[-1700:] + '```' +'\n\nSleeping for 10 mins after failed fetched attempt at ' + datetime.datetime.now().time().strftime("%H:%M:%S"))
             print('Problem encountered in outside the fetch logic, Sleeping for 10min')
-            await asyncio.sleep(60 * 10)
+            await asyncio.sleep(60 * 30)
 
 async def bot_start():
      await bot.start(os.getenv('TOKEN',None))
@@ -161,7 +161,6 @@ async def get_all_fillings(tickers): # the function responsible for bundling the
 
 
 async def play():
-    print('inside play')
     tickers_without_cik = premarket_gainers()
     tickers_with_cik = await add_CIKs(tickers_without_cik)
     worth_watching_list = await get_all_fillings(tickers_with_cik)
