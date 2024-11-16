@@ -12,6 +12,7 @@ import os
 #https://www.youtube.com/watch?v=UYJDKSah-Ww&ab_channel=Indently
 
 intents = discord.Intents.default()
+intents.members=True
 intents.message_content = True
 
 bot = commands.Bot(command_prefix='!',intents=intents)
@@ -20,54 +21,58 @@ bot = commands.Bot(command_prefix='!',intents=intents)
 
 @bot.event
 async def on_ready():
-    channel = bot.get_channel(1306738767280738354)
+    #channel = bot.get_channel(1306738767280738354) good to keep if i decide to change from DMS to channels posting
+    me = await bot.fetch_user(253660472803328002) #this gets the user id from discord API, bot.get_user doesn't work because it only polls the bot's cache
     start = datetime.time.fromisoformat('07:00:00')
     nyc_close_time = datetime.time.fromisoformat('20:00:00')
     previously_notified= set()
-    await channel.send('Starting <@253660472803328002>')
+    print(await me.send('Starting <@253660472803328002>'))
     iteration = 0
     while (True):
         try:
-            nyc_time = datetime.datetime.now(tz=ZoneInfo('America/New_York')).time()
-            if start <= nyc_time <= nyc_close_time:
-                iteration += 1
-                print(iteration)
-                dict_worth_watching = {}
-                try:
-                  dict_worth_watching = await play()  # one dict with all tickers as keys {'UAVS': 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40','QUBT': 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40'}
-                except Exception:                     # this dict has all the tickers that have fillings in the last 30days that include S-1 and EFFECT, we filter and notify in the next steps
-                  await channel.send('<@253660472803328002>')
-                  await channel.send(f'A problem has been encountered in fetching logic: \n```{traceback.format_exc()[-1700:]}``` \nSleeping for 10 mins after failed fetched attempt at {datetime.datetime.now().time().strftime("%H:%M:%S")}')
-                  print(f'Problem encountered with the logi \nSleeping for 10 mins after failed fetched attempt at {datetime.datetime.now().time().strftime("%H:%M:%S")}')
-                  await asyncio.sleep(60*30)
-                  continue
-                set_of_dict_from_logic = set(dict_worth_watching.keys())  # in order to check if we already notified these tickers we have to turn the keys into a set and compared them to the set of the previously notified tickers
-                print(f'Full returned set is {set_of_dict_from_logic}')
-                set_non_notified = set_of_dict_from_logic.difference(previously_notified)  # we get the tickers that weren't notified and add them to the final list that will be dispatched to users
-                print(f'Non_notified_set is {set_non_notified} ')
-                final_dict = dict()
-                for ticker in set_non_notified:   #after having the list of tickers to be notified ( that werent previously notified ) we put them all in a one dict as we received them from the logic in play() {'AAPL':'https://linktothefilling.com','NFTLX':'https://link.com'},
-                    final_dict.update({ticker:dict_worth_watching[ticker]})
-                print(f'Previous notified set is {previously_notified}')
-                if final_dict:   #If there are tickers to be notified 
-                    await channel.send('<@253660472803328002>')     #tag me 
-                    for ticker, link in final_dict.items():           #this is for formating so that each ticker send on chat is a hyperlink linking to the fillings 
-                        await channel.send(f'- [{ticker}]({link})')
-                    previously_notified = previously_notified.union(set_non_notified)     #we add the notified tickers to the set to avoid duplicate notifications next iterations
-                    print('Done sending messages')
-                print(f'New set of notified set is {previously_notified}') # we print it here and not inside the previous if to debugg and check that it was cleared after close ( so that each day starts with a an empty set and doesnt carry the notified tickers from yest )
-                print(f'Sleeping for 30 mins starting at {datetime.datetime.now().time().strftime("%H:%M:%S")}')
-                await asyncio.sleep(60*30 )  # every 30 mins
-            if nyc_time >= nyc_close_time: # we reset the notified ticker after close
-                previously_notified=set()  #set gets reset after dlose
-                print(f'After hours limit, Sleeping for 12 hours starting at {datetime.datetime.now().time().strftime("%H:%M:%S")}')
-                await asyncio.sleep(60*60*12) #sleep for 12 hours when the market is closed
-            if nyc_time <=start:
-                print(f'Sleeping for 30mins in Premarket, time is {datetime.datetime.now().time().strftime("%H:%M:%S")}')
-                await asyncio.sleep(60*60*3)  # sleep for an hour since it's probably around 4:XX AM and not worth it to check early before 7 am
+            nyc_date = datetime.datetime.now(tz=ZoneInfo('America/New_York'))
+            nyc_time = nyc_date.time()
+            today = nyc_date.weekday()
+            if  0 <= today <= 5 :  # if weekend just sleep
+                if start <= nyc_time <= nyc_close_time:
+                    iteration += 1
+                    print(iteration)
+                    dict_worth_watching = {}
+                    try:
+                      dict_worth_watching = await play()  # one dict with all tickers as keys {'UAVS': 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40','QUBT': 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40'}
+                    except Exception:                     # this dict has all the tickers that have fillings in the last 30days that include S-1 and EFFECT, we filter and notify in the next steps
+                      await me.send(f'A problem has been encountered in fetching logic: \n```{traceback.format_exc()[-1700:]}``` \nSleeping for 10 mins after failed fetched attempt at {datetime.datetime.now().strftime("%H:%M:%S")}')
+                      print(f'Problem encountered with the logi \nSleeping for 30 mins after failed fetched attempt at {datetime.datetime.now().strftime("%H:%M:%S")}')
+                      await asyncio.sleep(60*30)
+                      continue
+                    set_of_dict_from_logic = set(dict_worth_watching.keys())  # in order to check if we already notified these tickers we have to turn the keys into a set and compared them to the set of the previously notified tickers
+                    print(f'Full returned set is {set_of_dict_from_logic}')
+                    set_non_notified = set_of_dict_from_logic.difference(previously_notified)  # we get the tickers that weren't notified and add them to the final list that will be dispatched to users
+                    print(f'Non_notified_set is {set_non_notified} ')
+                    final_dict = dict()
+                    for ticker in set_non_notified:   #after having the list of tickers to be notified ( that werent previously notified ) we put them all in a one dict as we received them from the logic in play() {'AAPL':'https://linktothefilling.com','NFTLX':'https://link.com'},
+                        final_dict.update({ticker:dict_worth_watching[ticker]})
+                    print(f'Previous notified set is {previously_notified}')
+                    if final_dict:   #If there are tickers to be notified
+                        for ticker, link in final_dict.items():           #this is for formating so that each ticker send on chat is a hyperlink linking to the fillings
+                            await me.send(f'- [{ticker}]({link})')
+                        previously_notified = previously_notified.union(set_non_notified)     #we add the notified tickers to the set to avoid duplicate notifications next iterations
+                        print('Done sending messages')
+                    print(f'New set of notified set is {previously_notified}') # we print it here and not inside the previous if to debugg and check that it was cleared after close ( so that each day starts with a an empty set and doesnt carry the notified tickers from yest )
+                    print(f'Sleeping for 30 mins starting at {datetime.datetime.now().strftime("%H:%M:%S")}')
+                    await asyncio.sleep(60*30 )  # every 30 mins
+                if nyc_time >= nyc_close_time: # we reset the notified ticker after close
+                    previously_notified=set()  #set gets reset after dlose
+                    print(f'After hours limit, Sleeping for 12 hours starting at {datetime.datetime.now().strftime("%H:%M:%S")}')
+                    await asyncio.sleep(60*60*12) #sleep for 12 hours when the market is closed
+                if nyc_time <=start:
+                    print(f'Sleeping for 30mins in Premarket, time is {datetime.datetime.now().strftime("%H:%M:%S")}')
+                    await asyncio.sleep(60*60*3)  # sleep for an hour since it's probably around 4:XX AM and not worth it to check early before 7 am
+            else:
+                print(f'Weekend, Sleeping for 48 hours starting {datetime.datetime.now().strftime("%H:%M:%S")}')
+                await asyncio.sleep(60*60*48)
         except Exception:
-            await channel.send('<@253660472803328002>')
-            await channel.send('Problem encountered in outside the fetch logic: \n' + '```' + traceback.format_exc()[-1700:] + '```' +'\n\nSleeping for 10 mins after failed fetched attempt at ' + datetime.datetime.now().time().strftime("%H:%M:%S"))
+            await me.send('Problem encountered in outside the fetch logic: \n' + '```' + traceback.format_exc()[-1700:] + '```' +'\n\nSleeping for 10 mins after failed fetched attempt at ' + datetime.datetime.now().time().strftime("%H:%M:%S"))
             print('Problem encountered in outside the fetch logic, Sleeping for 30min')
             await asyncio.sleep(60 * 30)
 
