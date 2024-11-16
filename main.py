@@ -33,7 +33,7 @@ async def on_ready():
             nyc_date = datetime.datetime.now(tz=ZoneInfo('America/New_York'))
             nyc_time = nyc_date.time()
             today = nyc_date.weekday()
-            if   0 <= today <= 5 :  # if weekend just sleep
+            if   0 <= today <= 4:  # if weekend just sleep
                 if start <= nyc_time <= nyc_close_time: # If 7am and 8pm
                     iteration += 1
                     print(iteration)
