@@ -141,7 +141,7 @@ async def get_filling(ticker_dict,session,days_limit=30):  # we hit the SEC API 
     if(not hits): # this means there is no fillings of this ticker in the past 30 days that has S-1 or EFFECT
        return # returns NONE here that gets filtered on the function that called it
     for form in forms: # if forms are returns we check if they match EFFECT or S-1
-        if ('EFFECT' in form['_source']['form'] or 'S-1' in form['_source']['form']):
+        if 'S-1' in form['_source']['form']:
             email_hyperlink = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker_dict["CIK"]}&owner=exclude&count=40'
             return {ticker_dict['ticker']: email_hyperlink}
     return
