@@ -61,11 +61,11 @@ async def on_ready():
                     print(f'New set of notified set is {previously_notified}') # we print it here and not inside the previous if to debugg and check that it was cleared after close ( so that each day starts with a an empty set and doesnt carry the notified tickers from yest )
                     print(f'Sleeping for 30 mins starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                     await asyncio.sleep(60*30 )  # every 30 mins
-                if nyc_time >= nyc_close_time: # we reset the notified ticker after close
+                elif nyc_time >= nyc_close_time: # we reset the notified ticker after close
                     previously_notified=set()  #set gets reset after dlose
                     print(f'After hours limit, Sleeping for 12 hours starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                     await asyncio.sleep(60*60*12) #sleep for 12 hours when the market is closed
-                if nyc_time <=start:
+                elif nyc_time <=start:
                     print(f'Sleeping for 3 hours in Premarket, time is {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                     await asyncio.sleep(60*60*3)  # sleep for an hour since it's probably around 4:XX AM and not worth it to check early before 7 am
             else:
