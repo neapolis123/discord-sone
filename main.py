@@ -22,19 +22,19 @@ bot = commands.Bot(command_prefix='!',intents=intents)
 @bot.event
 async def on_ready():
     #channel = bot.get_channel(1306738767280738354) good to keep if i decide to change from DMS to channels posting
-    me = await bot.fetch_user(253660472803328002) #this gets the user id from discord API, bot.get_user doesn't work because it only polls the bot's cache
+    me = await bot.fetch_user(253660472803328002)
     start = datetime.time.fromisoformat('07:00:00')
     nyc_close_time = datetime.time.fromisoformat('20:00:00')
     previously_notified= set()
-    print(await me.send('Starting <@253660472803328002>'))
+    await me.send('Starting\n>')
     iteration = 0
     while (True):
         try:
             nyc_date = datetime.datetime.now(tz=ZoneInfo('America/New_York'))
             nyc_time = nyc_date.time()
             today = nyc_date.weekday()
-            if  0 <= today <= 5 :  # if weekend just sleep
-                if start <= nyc_time <= nyc_close_time:
+            if   0 <= today <= 5 :  # if weekend just sleep
+                if start <= nyc_time <= nyc_close_time: # If 7am and 8pm
                     iteration += 1
                     print(iteration)
                     dict_worth_watching = {}
@@ -66,12 +66,13 @@ async def on_ready():
                     print(f'After hours limit, Sleeping for 12 hours starting at {datetime.datetime.now().strftime("%H:%M:%S")}')
                     await asyncio.sleep(60*60*12) #sleep for 12 hours when the market is closed
                 if nyc_time <=start:
-                    print(f'Sleeping for 3 hourss in Premarket, time is {datetime.datetime.now().strftime("%H:%M:%S")}')
-                    await asyncio.sleep(60*60*3)  # sleep for a 3 hour since it's probably around 4:XX AM and not worth it to check early before 7 am
+                    print(f'Sleeping for 3 hours in Premarket, time is {datetime.datetime.now().strftime("%H:%M:%S")}')
+                    await asyncio.sleep(60*60*3)  # sleep for an hour since it's probably around 4:XX AM and not worth it to check early before 7 am
             else:
                 print(f'Weekend, Sleeping for 48 hours starting {datetime.datetime.now().strftime("%H:%M:%S")}')
                 await asyncio.sleep(60*60*48)
         except Exception:
+            await me.send('<@253660472803328002>')
             await me.send('Problem encountered in outside the fetch logic: \n' + '```' + traceback.format_exc()[-1700:] + '```' +'\n\nSleeping for 10 mins after failed fetched attempt at ' + datetime.datetime.now().time().strftime("%H:%M:%S"))
             print('Problem encountered in outside the fetch logic, Sleeping for 30min')
             await asyncio.sleep(60 * 30)
@@ -106,7 +107,7 @@ def premarket_gainers(price_limit=1):
         price = int(float(ticker['values']['price']))
         if (price > price_limit):
             tickers.append({'ticker': lean_ticker, 'price': price, 'gain': gain})
-    pprint.pprint(tickers)
+    #pprint.pprint(tickers)
     return tickers
 
 
@@ -125,7 +126,7 @@ async def add_CIKs(tickers):  # This takes the dictionary and adds the CIKs to i
         for ticker_dict in tickers:  #
             tasks.append(fetch_CIK(ticker_dict, session))  # assembles all the tasks and then triggers them with asyncio.gather
         results = await asyncio.gather(*tasks)
-        pprint.pprint(tickers)
+        #pprint.pprint(tickers)
         return tickers
 
 
