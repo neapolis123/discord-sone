@@ -66,8 +66,8 @@ async def on_ready():
                     print(f'After hours limit, Sleeping for 12 hours starting at {datetime.datetime.now().strftime("%H:%M:%S")}')
                     await asyncio.sleep(60*60*12) #sleep for 12 hours when the market is closed
                 if nyc_time <=start:
-                    print(f'Sleeping for 30mins in Premarket, time is {datetime.datetime.now().strftime("%H:%M:%S")}')
-                    await asyncio.sleep(60*60*3)  # sleep for an hour since it's probably around 4:XX AM and not worth it to check early before 7 am
+                    print(f'Sleeping for 3 hourss in Premarket, time is {datetime.datetime.now().strftime("%H:%M:%S")}')
+                    await asyncio.sleep(60*60*3)  # sleep for a 3 hour since it's probably around 4:XX AM and not worth it to check early before 7 am
             else:
                 print(f'Weekend, Sleeping for 48 hours starting {datetime.datetime.now().strftime("%H:%M:%S")}')
                 await asyncio.sleep(60*60*48)
