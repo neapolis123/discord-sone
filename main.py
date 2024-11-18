@@ -27,7 +27,7 @@ async def on_ready():
     start = datetime.time.fromisoformat('07:00:00')
     nyc_close_time = datetime.time.fromisoformat('20:00:00')
     previously_notified= set()
-    await me.send('Starting\n>')
+    await me.send('Starting\n')
     iteration = 0
     while (True):
         try:
