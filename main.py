@@ -8,6 +8,7 @@ import pprint
 import datetime
 import traceback
 import os
+import time as t
 #https://www.youtube.com/watch?v=9nCiT_Wt3_w&ab_channel=Oliver%27sTech
 #https://www.youtube.com/watch?v=UYJDKSah-Ww&ab_channel=Indently
 
@@ -124,9 +125,9 @@ async def add_CIKs(tickers):  # This takes the dictionary and adds the CIKs to i
     async with aiohttp.ClientSession(connector=conn) as session:  # we keep the same session for all the requests and pass it on to the individual calls
         for ticker_dict in tickers:  #
             tasks.append(fetch_CIK(ticker_dict, session))  # assembles all the tasks and then triggers them with asyncio.gather
-        start = time.time()
+        start = t.time()
         results = await asyncio.gather(*tasks)
-        print(f'Time to get all the CIKs {time.time() - start } s')
+        print(f'Time to get all the CIKs {t.time() - start } s')
         pprint.pprint(tickers)
         return tickers
 
@@ -159,9 +160,9 @@ async def get_all_fillings(tickers): # the function responsible for bundling the
     async with aiohttp.ClientSession(headers=headers,connector=conn) as session:
         for ticker_dict in tickers:
             tasks.append(get_filling(ticker_dict, session))  # ticker is a dict {ticker:'AAPL',CIK:013494343,gain:14,price:5}
-        start = time.time()
+        start = t.time()
         results = await asyncio.gather(*tasks)  # returns a list of suc [ { 'QNTM': 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1771885&owner=exclude&count=40'}, None (means no fillings were found for that api requests) , {'SG': 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1477815&owner=exclude&count=40'} ]
-        print(f'Time to get all the fillings {time.time() - start } s')
+        print(f'Time to get all the fillings {t.time() - start } s')
         for result in results:
             if result is not None:  # this filters the empty API requests that had no hits by taking out the Nones
                 list_worth_watching.update(result)  # very important part here merges every dict in a single one to make it easier for search in the next step , end result { 'QNTM': 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1771885&owner=exclude&count=40','SG': 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1477815&owner=exclude&count=40'}
