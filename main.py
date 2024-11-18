@@ -1,3 +1,4 @@
+
 import discord
 from discord.ext import commands
 from zoneinfo import ZoneInfo
@@ -16,7 +17,7 @@ intents = discord.Intents.default()
 intents.members=True
 intents.message_content = True
 
-bot = commands.Bot(command_prefix='!',intents=intents)
+bot = commands.Bot(command_prefix='/',intents=intents)
 
 
 
@@ -40,7 +41,7 @@ async def on_ready():
                     print(iteration)
                     dict_worth_watching = {}
                     try:
-                      dict_worth_watching = await play()  # one dict with all tickers as keys {'UAVS': 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40','QUBT': 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40'}
+                      dict_worth_watching = await play()  # one dict with all tickers as keys {'UAVS': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40',price:5},'QUBT': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40',price:10} }
                     except Exception:                     # this dict has all the tickers that have fillings in the last 30days that include S-1 and EFFECT, we filter and notify in the next steps
                       await me.send(f'A problem has been encountered in fetching logic: \n```{traceback.format_exc()[-1700:]}``` \nSleeping for 10 mins after failed fetched attempt at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                       print(f'Problem encountered with the logi \nSleeping for 30 mins after failed fetched attempt at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
@@ -52,11 +53,13 @@ async def on_ready():
                     print(f'Non_notified_set is {set_non_notified} ')
                     final_dict = dict()
                     for ticker in set_non_notified:   #after having the list of tickers to be notified ( that werent previously notified ) we put them all in a one dict as we received them from the logic in play() {'AAPL':'https://linktothefilling.com','NFTLX':'https://link.com'},
-                        final_dict.update({ticker:dict_worth_watching[ticker]})
+                        final_dict.update({ticker:{'link':dict_worth_watching[ticker]['link'],'price':dict_worth_watching[ticker]['price']}} )
                     print(f'Previous notified set is {previously_notified}')
                     if final_dict:   #If there are tickers to be notified
-                        for ticker, link in final_dict.items():           #this is for formating so that each ticker send on chat is a hyperlink linking to the fillings
-                            await me.send(f'- [{ticker}]({link})')
+                        for ticker, info in final_dict.items():           #this is for formating so that each ticker send on chat is a hyperlink linking to the fillings
+                            print(info)
+                            print(info['price'])
+                            await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]}')
                         previously_notified = previously_notified.union(set_non_notified)     #we add the notified tickers to the set to avoid duplicate notifications next iterations
                         print('Done sending messages')
                     print(f'New set of notified set is {previously_notified}') # we print it here and not inside the previous if to debugg and check that it was cleared after close ( so that each day starts with a an empty set and doesnt carry the notified tickers from yest )
@@ -145,7 +148,7 @@ async def get_filling(ticker_dict,session,days_limit=30):  # we hit the SEC API 
     for form in forms: # if forms are returns we check if they match EFFECT or S-1
         if 'S-1' in form['_source']['form']: # I only kept S-1 for now and deleted EFFECT , will be evaluted with time if it's worth checking for effects
             email_hyperlink = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker_dict["CIK"]}&owner=exclude&count=40'
-            return {ticker_dict['ticker']: email_hyperlink}
+            return {ticker_dict['ticker']: {'link':email_hyperlink,'price':ticker_dict['price']}} # returns a dict {AAPL : {link : 'https://filing, price: 222}
     return
 
 
@@ -179,4 +182,3 @@ async def play():
 
 if __name__ == '__main__':
     asyncio.run(bot_start())
-
