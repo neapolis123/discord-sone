@@ -25,7 +25,7 @@ bot = commands.Bot(command_prefix='/',intents=intents)
 async def on_ready():
     #channel = bot.get_channel(1306738767280738354) good to keep if i decide to change from DMS to channels posting
     me = await bot.fetch_user(253660472803328002)
-    start = datetime.time.fromisoformat('07:00:00')
+    start = datetime.time.fromisoformat('05:00:00')
     nyc_close_time = datetime.time.fromisoformat('20:00:00')
     previously_notified= set()
     await me.send('Starting\n')
@@ -135,7 +135,7 @@ async def add_CIKs(tickers):  # This takes the dictionary and adds the CIKs to i
         return tickers
 
 
-async def get_filling(ticker_dict,session,days_limit=30):  # we hit the SEC API to get the fillings from 30 days that has EFFECT or S-1
+async def get_filling(ticker_dict,session,days_limit=45):  # we hit the SEC API to get the fillings from 30 days that has EFFECT or S-1
     today = datetime.date.today()                             # ticker_dict has format {ticker:AAPL,price:X,gain:Y,CIK:Z}
     one_month_ago = today - datetime.timedelta(days=days_limit)
     url = f"https://efts.sec.gov/LATEST/search-index?q=EFFECT%20S-1&ciks={str(ticker_dict['CIK']).zfill(10)}&startdt={one_month_ago.isoformat()}&enddt={today.isoformat()}"
