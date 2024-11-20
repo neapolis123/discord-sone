@@ -67,11 +67,11 @@ async def on_ready():
                     await asyncio.sleep(60*30 )  # every 30 mins
                 elif nyc_time >= nyc_close_time: # we reset the notified ticker after close
                     previously_notified=set()  #set gets reset after dlose
-                    print(f'After hours limit, Sleeping for 12 hours starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
-                    await asyncio.sleep(60*60*12) #sleep for 12 hours when the market is closed
+                    print(f'After hours limit, Sleeping for 9 hours starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
+                    await asyncio.sleep(60*60*9) #sleep for 12 hours when the market is closed
                 elif nyc_time <=start:
-                    print(f'Sleeping for 3 hours in Premarket, time is {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
-                    await asyncio.sleep(60*60*3)  # sleep for an hour since it's probably around 4:XX AM and not worth it to check early before 7 am
+                    print(f'Sleeping for 1 hour in Premarket, time is {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
+                    await asyncio.sleep(60*60)  # sleep for an hour since it's probably around 4:XX AM and not worth it to check early before 7 am
             else:
                 print(f'Weekend, Sleeping for 48 hours starting {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                 await asyncio.sleep(60*60*48)
