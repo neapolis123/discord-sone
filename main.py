@@ -146,7 +146,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
         if int(api_response['hits']['total']['value']):  #its an IPO, discard
             print(f'added {ticker_dict["ticker"]} to the set of discarded_notified because its an IPO')
             notified_or_discarded.add(ticker_dict['ticker'])
-            print(notified_or_discarded)
+            print(f'notified/discarded set is : {notified_or_discarded}')
             return
     
     # if we reach here it means we have good fillings that are NOT an IPO, we check for selling shareholder amongst the good ones by scanning their contents 
@@ -182,7 +182,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
         else:   # this else means we went through all the filling of this ticker but all of them were shareholders selling fillings and not interesting ones, we wouldn't make it here if we found a good one since we have a return that will jump over this
             print(f'added {ticker_dict["ticker"]} to the set of discarded_notified')
             notified_or_discarded.add(ticker_dict['ticker'])  # here we add the ticker whole fillings are not interesting to the discarded list so that we avoid checking again next loop , to be determined if this is a good decision just in case something newer gets filed later 
-            print(notified_or_discarded)
+            print(f'notified/discarded set is : {notified_or_discarded}')
     return
 
 async def get_all_fillings(tickers,notified_or_discarded): # the function responsible for bundling the async API requests to the SEC API, each single call is made through function get_filling
