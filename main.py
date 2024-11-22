@@ -27,7 +27,7 @@ async def on_ready():
     me = await bot.fetch_user(253660472803328002)
     start = datetime.time.fromisoformat('05:00:00')
     nyc_close_time = datetime.time.fromisoformat('20:00:00')
-    previously_notified= set()
+    previously_notified_or_discarded= set()
     await me.send('Starting\n')
     iteration = 0
     while (True):
