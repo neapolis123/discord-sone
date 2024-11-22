@@ -149,6 +149,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
             return
     
     # if we reach here it means we have good S/F-1x fillings that are NOT an IPO, we now scan the S-1 fillings to check if they are REsale of shareholders 
+        headers = {
         'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
         'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8,fr;q=0.7',
         'cache-control': 'max-age=0',
