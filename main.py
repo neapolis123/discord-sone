@@ -42,18 +42,13 @@ async def on_ready():
                     dict_worth_watching = {}
                     try:
                       dict_worth_watching = await play(previously_notified)  # one dict with all tickers as keys {'UAVS': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40',price:5},'QUBT': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40',price:10} }
-                    except Exception:                     # this dict has all the tickers that have fillings in the last 30days that include S-1 and EFFECT, we filter and notify in the next steps
+                    except Exception:                     # this dict has all the tickers that have fillings in the last 30days that include S-1 and EFFECT, if we reached this point, it means that these tickers will be notified because they were filtered as not preivously notified/discard in 'get_fillings' and if a a ticker has a filling but it's a seller shareholder one it will be added to the discarded without making it to this step
                       await me.send(f'A problem has been encountered in fetching logic: \n```{traceback.format_exc()[-1700:]}``` \nSleeping for 10 mins after failed fetched attempt at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                       print(f'Problem encountered with the logi \nSleeping for 30 mins after failed fetched attempt at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                       await asyncio.sleep(60*30)
                       continue
                     set_of_dict_from_logic = set(dict_worth_watching.keys())  # in order to check if we already notified these tickers we have to turn the keys into a set and compared them to the set of the previously notified tickers
-                    print(f'Full returned set is {set_of_dict_from_logic}')
-                    #set_non_notified = set_of_dict_from_logic.difference(previously_notified)  # we get the tickers that weren't notified and add them to the final list that will be dispatched to users
-                    #print(f'Non_notified_set is {set_non_notified} ')
-                    #final_dict = dict()
-                    #for ticker in dict_worth_watching.keys():   #after having the list of tickers to be notified ( that werent previously notified ) we put them all in a one dict as we received them from the logic in play() {'AAPL':'https://linktothefilling.com','NFTLX':'https://link.com'},
-                    #    final_dict.update({ticker:{'link':dict_worth_watching[ticker]['link'],'price':dict_worth_watching[ticker]['price']}} )
+                    print(f'the set to be notified is {set_of_dict_from_logic}')
                     print(f'Previous notified set is {previously_notified}')
                     if dict_worth_watching:   #If there are tickers to be notified
                         for ticker, info in dict_worth_watching.items():           #this is for formating so that each ticker send on chat is a hyperlink linking to the fillings
@@ -166,15 +161,15 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
                 print(filling_link)
                 filling = await s.get(filling_link)
                 filling_text = await filling.text()
-                if 'We will not receive any' not in filling_text:
+                if 'We will not receive any' not in filling_text: # this checks if the S-1/F-1 filling is NOT a shareholders selling filling but checking for the eliminating text 
                     print(f'good filling found on {ticker_dict["ticker"]}, added')
                     email_hyperlink = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker_dict["CIK"]}&owner=exclude&count=40'
-                    return  {ticker_dict['ticker']: {'link':email_hyperlink,'price':ticker_dict['price']}}
+                    return  {ticker_dict['ticker']: {'link':email_hyperlink,'price':ticker_dict['price']}} # we break here as soon as we find a good one 
                 else:
                     print(f'Shareholder Resale filling found on {ticker_dict["ticker"]}, discarded')
-        else:
+        else:   # this else means we went through all the filling of this ticker but all of them were shareholders selling fillings and not interesting ones, we wouldn't make it here if we found a good one since we have a return that will jump over this
             print(f'added {ticker_dict["ticker"]} to the set of discarded_notified')
-            notified_or_discarded.add(ticker_dict['ticker'])
+            notified_or_discarded.add(ticker_dict['ticker'])  # here we add the ticker whole fillings are not interesting to the discarded list so that we avoid checking again next loop , to be determined if this is a good decision just in case something newer gets filed later 
             print(notified_or_discarded)
     return
 
@@ -188,7 +183,7 @@ async def get_all_fillings(tickers,notified_or_discarded): # the function respon
     conn = aiohttp.TCPConnector(limit_per_host=5)
     async with aiohttp.ClientSession(headers=headers,connector=conn) as session:
         for ticker_dict in tickers:
-            if ticker_dict['ticker'] not in notified_or_discarded:
+            if ticker_dict['ticker'] not in notified_or_discarded: # doesnt check fillings for already discard or notified tickers 
                tasks.append(get_filling(ticker_dict, session,notified_or_discarded))  # ticker is a dict {ticker:'AAPL',CIK:013494343,gain:14,price:5}
         start = t.time()
         results = await asyncio.gather(*tasks)  # returns a list of suc [ { 'QNTM': 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1771885&owner=exclude&count=40'}, None (means no fillings were found for that api requests) , {'SG': 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1477815&owner=exclude&count=40'} ]
