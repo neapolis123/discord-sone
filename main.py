@@ -48,13 +48,13 @@ async def on_ready():
                       await asyncio.sleep(60*30)
                       continue
                     print(f'the set to be notified is {set(dict_worth_watching.keys())}') # the set that we got from the logic {'UAVS': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40',price:5},'QUBT': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40',price:10} }
-                    print(f'Previous notified/discarded set is {previously_notified_or_discarded}') # for ease of debugging in the future
+                    print(f'notified/discarded set is {previously_notified_or_discarded}') # for ease of debugging in the future
                     if dict_worth_watching:   #If there are tickers to be notified
                         for ticker, info in dict_worth_watching.items():           #this is for formating so that each ticker send on chat is a hyperlink linking to the fillings
                             await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]}') # ticker = 'AAPL', info={link:xxxx,price:xxxxx}
                         previously_notified_or_discarded = previously_notified_or_discarded.union(dict_worth_watching.keys())     #we add the notified tickers to the set to avoid duplicate notifications next iterations
                         print('Done sending messages')
-                    print(f'New set of notified set is {previously_notified_or_discarded}') # we print it here and not inside the previous if to debugg and check that it was cleared after close ( so that each day starts with a an empty set and doesnt carry the notified tickers from yest )
+                        print(f'New set of notified/discarded set is {previously_notified_or_discarded}') # we print it here and not inside the previous if to debugg and check that it was cleared after close ( so that each day starts with a an empty set and doesnt carry the notified tickers from yest )
                     print(f'Sleeping for 30 mins starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                     await asyncio.sleep(60*30 )  # every 30 mins
                 elif nyc_time >= nyc_close_time: # we reset the notified ticker after close
