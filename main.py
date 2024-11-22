@@ -5,11 +5,9 @@ from zoneinfo import ZoneInfo
 import asyncio
 import aiohttp
 import requests
-import pprint
 import datetime
 import traceback
 import os
-import time as t
 #https://www.youtube.com/watch?v=9nCiT_Wt3_w&ab_channel=Oliver%27sTech
 #https://www.youtube.com/watch?v=UYJDKSah-Ww&ab_channel=Indently
 
@@ -172,7 +170,7 @@ async def get_filling(ticker_dict,session,days_limit=30):  # we hit the SEC API 
                 if 'We will not receive any' not in filling_text: # we check if it's a Shareholders Resale or not, if it's not we return the current
                     print(f'good filling found on {ticker_dict["ticker"]}, added')
                     email_hyperlink = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker_dict["CIK"]}&owner=exclude&count=100'
-                    return {ticker_dict['ticker']: email_hyperlink}
+                    return {ticker_dict['ticker']: {'link':email_hyperlink,'price':ticker_dict['price']}}
                 else:         # if not it means it only has resale filling no need to notify us
                     print(f'Shareholder Resale filling found on {ticker_dict["ticker"]}, discarded')
     return
