@@ -138,6 +138,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
     if int(api_response['hits']['total']['value']):  #its an IPO, discard
         print(f'added {ticker_dict["ticker"]} to the set of discarded_notified because its an IPO')
         notified_or_discarded.add(ticker_dict['ticker'])
+        print(notified_or_discarded)
         return
     
     url = f"https://efts.sec.gov/LATEST/search-index?category=custom%20S-1&ciks={str(ticker_dict['CIK']).zfill(10)}&&forms=F-1%2CF-1MEF%2CS-1%2CS-1MEF&&startdt={one_month_ago.isoformat()}&enddt={today.isoformat()}"
@@ -170,7 +171,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
                 filing_number = id[0].replace('-', '')  # we replace the dashes '-' with empty spaces to construct the filling link
                 filling_link = f'https://www.sec.gov/Archives/edgar/data/{int(ticker_dict["CIK"])}/{filing_number}/{id[1]}'
                 print(filling_link)
-                filling = await s.get(filling_link,ssl=false)
+                filling = await s.get(filling_link,ssl=False)
                 filling_text = await filling.text()
                 if 'We will not receive any' not in filling_text: # this checks if the S-1/F-1 filling is NOT a shareholders selling filling but checking for the eliminating text
                     print(f'good filling found on {ticker_dict["ticker"]}, added')
