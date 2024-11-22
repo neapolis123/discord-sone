@@ -174,7 +174,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
                     print(f'Shareholder Resale filling found on {ticker_dict["ticker"]}, discarded')
         else:
             print(f'added {ticker_dict["ticker"]} to the set of discarded_notified')
-            notified_or_discarded.update(ticker_dict['ticker'])
+            notified_or_discarded.add(ticker_dict['ticker'])
             print(notified_or_discarded)
     return
 
