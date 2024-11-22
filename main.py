@@ -47,12 +47,11 @@ async def on_ready():
                       print(f'Problem encountered with the logi \nSleeping for 30 mins after failed fetched attempt at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                       await asyncio.sleep(60*30)
                       continue
-                    set_of_dict_from_logic = set(dict_worth_watching.keys())  # in order to check if we already notified these tickers we have to turn the keys into a set and compared them to the set of the previously notified tickers
-                    print(f'the set to be notified is {set_of_dict_from_logic}')
-                    print(f'Previous notified set is {previously_notified}')
+                    print(f'the set to be notified is {set(dict_worth_watching.keys())}') # the set that we got from the logic {'UAVS': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40',price:5},'QUBT': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40',price:10} }
+                    print(f'Previous notified/discarded set is {previously_notified}') # for ease of debugging in the future
                     if dict_worth_watching:   #If there are tickers to be notified
                         for ticker, info in dict_worth_watching.items():           #this is for formating so that each ticker send on chat is a hyperlink linking to the fillings
-                            await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]}')
+                            await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]}') # ticker = 'AAPL', info={link:xxxx,price:xxxxx}
                         previously_notified = previously_notified.union(dict_worth_watching.keys())     #we add the notified tickers to the set to avoid duplicate notifications next iterations
                         print('Done sending messages')
                     print(f'New set of notified set is {previously_notified}') # we print it here and not inside the previous if to debugg and check that it was cleared after close ( so that each day starts with a an empty set and doesnt carry the notified tickers from yest )
