@@ -79,7 +79,7 @@ async def on_ready():
             await asyncio.sleep(60 * 30)
 
 async def bot_start():
-     await bot.start(os.getenv('TOKEN',None)
+     await bot.start(os.getenv('TOKEN',None))
 
 
 # https://www.youtube.com/watch?v=nFn4_nA_yk8&t=786s&ab_channel=PatrickCollins explains the asyncio principle
