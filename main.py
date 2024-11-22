@@ -135,20 +135,45 @@ async def add_CIKs(tickers):  # This takes the dictionary and adds the CIKs to i
         return tickers
 
 
-async def get_filling(ticker_dict,session,days_limit=45):  # we hit the SEC API to get the fillings from 30 days that has EFFECT or S-1
+async def get_filling(ticker_dict,session,days_limit=30):  # we hit the SEC API to get the fillings from 30 days that has EFFECT or S-1
     today = datetime.date.today()                             # ticker_dict has format {ticker:AAPL,price:X,gain:Y,CIK:Z}
     one_month_ago = today - datetime.timedelta(days=days_limit)
-    url = f"https://efts.sec.gov/LATEST/search-index?q=EFFECT%20S-1&ciks={str(ticker_dict['CIK']).zfill(10)}&startdt={one_month_ago.isoformat()}&enddt={today.isoformat()}"
+    url = f"https://efts.sec.gov/LATEST/search-index?category=custom%20S-1&ciks={str(ticker_dict['CIK']).zfill(10)}&&forms=F-1%2CF-1MEF%2CS-1%2CS-1MEF&&startdt={one_month_ago.isoformat()}&enddt={today.isoformat()}"
     response = await session.get(url,ssl=False)
     api_response = await response.json()
     hits = int(api_response['hits']['total']['value'])
     forms = api_response['hits']['hits']
     if(not hits): # this means there is no fillings of this ticker in the past 30 days that has S-1 or EFFECT
        return # returns NONE here that gets filtered on the function that called it
-    for form in forms: # if forms are returns we check if they match EFFECT or S-1
-        if 'S-1' in form['_source']['form'] or 'F-1' in form['_source']['form']: # I only kept S-1 for now and deleted EFFECT , will be evaluted with time if it's worth checking for effects
-            email_hyperlink = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker_dict["CIK"]}&owner=exclude&count=40'
-            return {ticker_dict['ticker']: {'link':email_hyperlink,'price':ticker_dict['price']}} # returns a dict {AAPL : {link : 'https://filing, price: 222}
+    headers = {
+        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8,fr;q=0.7',
+        'cache-control': 'max-age=0',
+        'priority': 'u=0, i',
+        'sec-ch-ua': '"Chromium";v="130", "Google Chrome";v="130", "Not?A_Brand";v="99"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"macOS"',
+        'sec-fetch-dest': 'document',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-site': 'none',
+        'sec-fetch-user': '?1',
+        'upgrade-insecure-requests': '1',
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
+    }
+    async with aiohttp.ClientSession(headers=headers) as s:  # we open one new connection per ticker because we need different headers than the main connection session that we passed before
+        for form in forms: # if forms are returns we check if they match EFFECT or S-1
+                id = form['_id'].split(':')  # form [_id] = "0001370053-24-000056:anab-formsx3_atm2024.htm" , we split it on the ':' which will be replace with a '/' later
+                filing_number = id[0].replace('-', '')  # the first part we replace the dashes '-' with empty spaces to construct the filling link
+                filling_link = f'https://www.sec.gov/Archives/edgar/data/{int(ticker_dict["CIK"])}/{filing_number}/{id[1]}' # the second part we keep as is, we concatenate both with '/' now to construct the link to the filling that we will scan 
+                print(filling_link)
+                filling = await s.get(filling_link)  #get the filling
+                filling_text = await filling.text()  #get the text
+                if 'We will not receive any' not in filling_text: # we check if it's a Shareholders Resale or not, if it's not we return the current
+                    print(f'good filling found on {ticker_dict["ticker"]}, added')
+                    email_hyperlink = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker_dict["CIK"]}&owner=exclude&count=100'
+                    return {ticker_dict['ticker']: email_hyperlink}
+                else:         # if not it means it only has resale filling no need to notify us
+                    print(f'Shareholder Resale filling found on {ticker_dict["ticker"]}, discarded')
     return
 
 
