@@ -9,7 +9,7 @@ import pprint
 import datetime
 import traceback
 import os
-import time as t 
+import time as t
 #https://www.youtube.com/watch?v=9nCiT_Wt3_w&ab_channel=Oliver%27sTech
 #https://www.youtube.com/watch?v=UYJDKSah-Ww&ab_channel=Indently
 
@@ -41,7 +41,7 @@ async def on_ready():
                     print(iteration)
                     dict_worth_watching = {}
                     try:
-                      dict_worth_watching = await play()  # one dict with all tickers as keys {'UAVS': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40',price:5},'QUBT': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40',price:10} }
+                      dict_worth_watching = await play(previously_notified)  # one dict with all tickers as keys {'UAVS': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40',price:5},'QUBT': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40',price:10} }
                     except Exception:                     # this dict has all the tickers that have fillings in the last 30days that include S-1 and EFFECT, we filter and notify in the next steps
                       await me.send(f'A problem has been encountered in fetching logic: \n```{traceback.format_exc()[-1700:]}``` \nSleeping for 10 mins after failed fetched attempt at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                       print(f'Problem encountered with the logi \nSleeping for 30 mins after failed fetched attempt at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
@@ -49,18 +49,16 @@ async def on_ready():
                       continue
                     set_of_dict_from_logic = set(dict_worth_watching.keys())  # in order to check if we already notified these tickers we have to turn the keys into a set and compared them to the set of the previously notified tickers
                     print(f'Full returned set is {set_of_dict_from_logic}')
-                    set_non_notified = set_of_dict_from_logic.difference(previously_notified)  # we get the tickers that weren't notified and add them to the final list that will be dispatched to users
-                    print(f'Non_notified_set is {set_non_notified} ')
-                    final_dict = dict()
-                    for ticker in set_non_notified:   #after having the list of tickers to be notified ( that werent previously notified ) we put them all in a one dict as we received them from the logic in play() {'AAPL':'https://linktothefilling.com','NFTLX':'https://link.com'},
-                        final_dict.update({ticker:{'link':dict_worth_watching[ticker]['link'],'price':dict_worth_watching[ticker]['price']}} )
+                    #set_non_notified = set_of_dict_from_logic.difference(previously_notified)  # we get the tickers that weren't notified and add them to the final list that will be dispatched to users
+                    #print(f'Non_notified_set is {set_non_notified} ')
+                    #final_dict = dict()
+                    #for ticker in dict_worth_watching.keys():   #after having the list of tickers to be notified ( that werent previously notified ) we put them all in a one dict as we received them from the logic in play() {'AAPL':'https://linktothefilling.com','NFTLX':'https://link.com'},
+                    #    final_dict.update({ticker:{'link':dict_worth_watching[ticker]['link'],'price':dict_worth_watching[ticker]['price']}} )
                     print(f'Previous notified set is {previously_notified}')
-                    if final_dict:   #If there are tickers to be notified
-                        for ticker, info in final_dict.items():           #this is for formating so that each ticker send on chat is a hyperlink linking to the fillings
-                            print(info)
-                            print(info['price'])
+                    if dict_worth_watching:   #If there are tickers to be notified
+                        for ticker, info in dict_worth_watching.items():           #this is for formating so that each ticker send on chat is a hyperlink linking to the fillings
                             await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]}')
-                        previously_notified = previously_notified.union(set_non_notified)     #we add the notified tickers to the set to avoid duplicate notifications next iterations
+                        previously_notified = previously_notified.union(dict_worth_watching.keys())     #we add the notified tickers to the set to avoid duplicate notifications next iterations
                         print('Done sending messages')
                     print(f'New set of notified set is {previously_notified}') # we print it here and not inside the previous if to debugg and check that it was cleared after close ( so that each day starts with a an empty set and doesnt carry the notified tickers from yest )
                     print(f'Sleeping for 30 mins starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
@@ -68,7 +66,7 @@ async def on_ready():
                 elif nyc_time >= nyc_close_time: # we reset the notified ticker after close
                     previously_notified=set()  #set gets reset after dlose
                     print(f'After hours limit, Sleeping for 9 hours starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
-                    await asyncio.sleep(60*60*9) #sleep for 9 hours when the market is closed, so that we resume around 5 AM next day 
+                    await asyncio.sleep(60*60*9) #sleep for 9 hours when the market is closed, so that we resume around 5 AM next day
                 elif nyc_time <=start:
                     print(f'Sleeping for 1 hour in Premarket, time is {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                     await asyncio.sleep(60*60)  # sleep for an hour since it's probably around 4:XX AM and not worth it to check early before 7 am
@@ -81,7 +79,7 @@ async def on_ready():
             await asyncio.sleep(60 * 30)
 
 async def bot_start():
-     await bot.start(os.getenv('TOKEN',None))
+     await bot.start(os.getenv('TOKEN',None)
 
 
 # https://www.youtube.com/watch?v=nFn4_nA_yk8&t=786s&ab_channel=PatrickCollins explains the asyncio principle
@@ -135,11 +133,10 @@ async def add_CIKs(tickers):  # This takes the dictionary and adds the CIKs to i
         return tickers
 
 
-async def get_filling(ticker_dict,session,days_limit=30):  # we hit the SEC API to get the fillings from 30 days that has EFFECT or S-1
+async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30):  # we hit the SEC API to get the fillings from 30 days that has EFFECT or S-1
     today = datetime.date.today()                             # ticker_dict has format {ticker:AAPL,price:X,gain:Y,CIK:Z}
     one_month_ago = today - datetime.timedelta(days=days_limit)
-                                                    #category custom and then later forms = F1 and S1 will filter S-1 and F-1 and S-1/A and S-1/MEF for us 
-    url = f"https://efts.sec.gov/LATEST/search-index?category=custom%20S-1&ciks={str(ticker_dict['CIK']).zfill(10)}&&forms=F-1%2CF-1MEF%2CS-1%2CS-1MEF&&startdt={one_month_ago.isoformat()}&enddt={today.isoformat()}" 
+    url = f"https://efts.sec.gov/LATEST/search-index?category=custom%20S-1&ciks={str(ticker_dict['CIK']).zfill(10)}&&forms=F-1%2CF-1MEF%2CS-1%2CS-1MEF&&startdt={one_month_ago.isoformat()}&enddt={today.isoformat()}"
     response = await session.get(url,ssl=False)
     api_response = await response.json()
     hits = int(api_response['hits']['total']['value'])
@@ -161,24 +158,27 @@ async def get_filling(ticker_dict,session,days_limit=30):  # we hit the SEC API 
         'upgrade-insecure-requests': '1',
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
     }
-    async with aiohttp.ClientSession(headers=headers) as s:  # we open one new connection per ticker because we need different headers than the main connection session that we passed before
+    async with aiohttp.ClientSession(headers=headers) as s:
         for form in forms: # if forms are returns we check if they match EFFECT or S-1
-                id = form['_id'].split(':')  # form [_id] = "0001370053-24-000056:anab-formsx3_atm2024.htm" , we split it on the ':' which will be replace with a '/' later
-                filing_number = id[0].replace('-', '')  # the first part we replace the dashes '-' with empty spaces to construct the filling link
-                filling_link = f'https://www.sec.gov/Archives/edgar/data/{int(ticker_dict["CIK"])}/{filing_number}/{id[1]}' # the second part we keep as is, we concatenate both with '/' now to construct the link to the filling that we will scan 
+                id = form['_id'].split(':')  # form ['id] = "_id": "0001370053-24-000056:anab-formsx3_atm2024.htm" , we split it on the ':' which will be replace with a '/' later
+                filing_number = id[0].replace('-', '')  # we replace the dashes '-' with empty spaces to construct the filling link
+                filling_link = f'https://www.sec.gov/Archives/edgar/data/{int(ticker_dict["CIK"])}/{filing_number}/{id[1]}'
                 print(filling_link)
-                filling = await s.get(filling_link)  #get the filling
-                filling_text = await filling.text()  #get the text
-                if 'We will not receive any' not in filling_text: # we check if it's a Shareholders Resale or not, if it's not we return the current
+                filling = await s.get(filling_link)
+                filling_text = await filling.text()
+                if 'We will not receive any' not in filling_text:
                     print(f'good filling found on {ticker_dict["ticker"]}, added')
-                    email_hyperlink = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker_dict["CIK"]}&owner=exclude&count=100'
-                    return {ticker_dict['ticker']: {'link':email_hyperlink,'price':ticker_dict['price']}}
-                else:         # if not it means it only has resale filling no need to notify us
+                    email_hyperlink = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker_dict["CIK"]}&owner=exclude&count=40'
+                    return  {ticker_dict['ticker']: {'link':email_hyperlink,'price':ticker_dict['price']}}
+                else:
                     print(f'Shareholder Resale filling found on {ticker_dict["ticker"]}, discarded')
+        else:
+            print(f'added {ticker_dict["ticker"]} to the set of discarded_notified')
+            notified_or_discarded.update(ticker_dict['ticker'])
+            print(notified_or_discarded)
     return
 
-
-async def get_all_fillings(tickers): # the function responsible for bundling the async API requests to the SEC API, each single call is made through function get_filling
+async def get_all_fillings(tickers,notified_or_discarded): # the function responsible for bundling the async API requests to the SEC API, each single call is made through function get_filling
     tasks = []
     list_worth_watching = dict()
     headers = {
@@ -188,7 +188,8 @@ async def get_all_fillings(tickers): # the function responsible for bundling the
     conn = aiohttp.TCPConnector(limit_per_host=5)
     async with aiohttp.ClientSession(headers=headers,connector=conn) as session:
         for ticker_dict in tickers:
-            tasks.append(get_filling(ticker_dict, session))  # ticker is a dict {ticker:'AAPL',CIK:013494343,gain:14,price:5}
+            if ticker_dict['ticker'] not in notified_or_discarded:
+               tasks.append(get_filling(ticker_dict, session,notified_or_discarded))  # ticker is a dict {ticker:'AAPL',CIK:013494343,gain:14,price:5}
         start = t.time()
         results = await asyncio.gather(*tasks)  # returns a list of suc [ { 'QNTM': 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1771885&owner=exclude&count=40'}, None (means no fillings were found for that api requests) , {'SG': 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1477815&owner=exclude&count=40'} ]
         print(f'Time to get all the fillings {t.time() - start } s')
@@ -199,10 +200,10 @@ async def get_all_fillings(tickers): # the function responsible for bundling the
         return list_worth_watching
 
 
-async def play():
+async def play(notified_or_discarded):
     tickers_without_cik = premarket_gainers()
     tickers_with_cik = await add_CIKs(tickers_without_cik)
-    worth_watching_list = await get_all_fillings(tickers_with_cik)
+    worth_watching_list = await get_all_fillings(tickers_with_cik,notified_or_discarded)
     return  worth_watching_list
 
 
