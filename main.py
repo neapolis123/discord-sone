@@ -19,6 +19,7 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix='/',intents=intents)
 
+blocked_set = set()
 
 
 @bot.event
@@ -27,9 +28,9 @@ async def on_ready():
     me = await bot.fetch_user(253660472803328002)
     start = datetime.time.fromisoformat('05:00:00')
     nyc_close_time = datetime.time.fromisoformat('20:00:00')
-    previously_notified_or_discarded= set()
     await me.send('Starting\n')
     iteration = 0
+    previously_notified_or_discarded = set()
     while (True):
         try:
             nyc_date = datetime.datetime.now(tz=ZoneInfo('America/New_York'))
@@ -58,8 +59,9 @@ async def on_ready():
                     print(f'Sleeping for 30 mins starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                     await asyncio.sleep(60*30 )  # every 30 mins
                 elif nyc_time >= nyc_close_time: # we reset the notified ticker after close
-                    previously_notified_or_discarded=set()  #set gets reset after dlose
+                    previously_notified_or_discarded= blocked_set  # set gets reset after close to what we manually added as blocked, this way every day we start with the set of blocked 
                     print(f'After hours limit, Sleeping for 9 hours starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
+                    print(f'The Blocked_set is {blocked_set}, assigned to previously_notified_set')
                     await asyncio.sleep(60*60*9) #sleep for 9 hours when the market is closed, so that we resume around 5 AM next day
                 elif nyc_time <=start:
                     print(f'Sleeping for 1 hour in Premarket, time is {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
@@ -71,6 +73,32 @@ async def on_ready():
             await me.send('Problem encountered in outside the fetch logic: \n' + '```' + traceback.format_exc()[-1700:] + '```' +'\n\nSleeping for 10 mins after failed fetched attempt at ' + datetime.datetime.now(tz=ZoneInfo('America/New_York')).strftime("%H:%M:%S"))
             print('Problem encountered in outside the fetch logic, Sleeping for 30min')
             await asyncio.sleep(60 * 30)
+
+
+
+@bot.event
+async def on_message(ctx):
+    global blocked_set
+    #if ctx.channel.type == 'private' : # gives 'private' if DM or 'text' if its a public text channel but it doesnt work cause it's not a string so we try the next IF, this is only here to show the logical steps 
+    #    print(ctx.content)
+    #    await ctx.channel.send(f'Done blocked {ctx.cotent}')
+    if isinstance(ctx.channel, discord.channel.DMChannel) and ctx.author != bot.user: # prevents the bot from going into an endless loop
+        command = ctx.content
+        parameter = command.split(' ')
+        if len(parameter) == 1:  #one word DM 'LIST','CLEAR' or AAPL ( just ticker symbol to add) 
+            if command == 'LIST':
+                await ctx.channel.send(blocked_set)
+            elif command == 'CLEAR':             
+                blocked_set= set()
+                await ctx.channel.send('Cleared the set')
+            else:
+                blocked_set.add(command)
+                await ctx.channel.send(f'Added {command} to the set')
+        else:    # to remove just REMOVE Ticker or R Ticker
+            blocked_set.discard(parameter[1])
+            await ctx.channel.send(f'Deleted {command} from the set')
+            
+
 
 async def bot_start():
      await bot.start(os.getenv('TOKEN',None))
