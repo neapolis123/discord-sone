@@ -2,3 +2,6 @@
 
 def hello():
     print('Hello World')
+
+def second():
+    print('second change')
