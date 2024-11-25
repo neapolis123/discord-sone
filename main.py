@@ -96,7 +96,7 @@ async def on_message(ctx):
                 await ctx.channel.send(f'Added {command.upper()} to the set')
         else:    # to remove just REMOVE Ticker or R Ticker
             blocked_set.discard(parameter[1].upper())
-            await ctx.channel.send(f'Deleted {command.upper()} from the set')
+            await ctx.channel.send(f'Deleted {parameter[1].upper()} from the set')
             
 
 
