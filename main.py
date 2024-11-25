@@ -82,7 +82,7 @@ async def on_message(ctx):
     #if ctx.channel.type == 'private' : # gives 'private' if DM or 'text' if its a public text channel but it doesnt work cause it's not a string so we try the next IF, this is only here to show the logical steps 
     #    print(ctx.content)
     #    await ctx.channel.send(f'Done blocked {ctx.cotent}')
-    if isinstance(ctx.channel, discord.channel.DMChannel) and ctx.author != bot.user: # prevents the bot from going into an endless loop
+    if isinstance(ctx.channel, discord.channel.DMChannel) and ctx.author != bot.user and ctx.type != discord.MessageType.pins_add and ctx.type != discord.MessageType.reply  : # prevents the bot from going into an endless loop and check that it isnt a system message after we pin a message and also not a reply to a good filling that we want to add info 
         command = ctx.content
         parameter = command.split(' ')
         if len(parameter) == 1:  #one word DM 'LIST','CLEAR' or AAPL ( just ticker symbol to add) 
