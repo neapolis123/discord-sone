@@ -53,7 +53,7 @@ async def on_ready():
                     if dict_worth_watching:   #If there are tickers to be notified
                         for ticker, info in dict_worth_watching.items():           #this is for formating so that each ticker send on chat is a hyperlink linking to the fillings
                             await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]}') # ticker = 'AAPL', info={link:xxxx,price:xxxxx}
-                        previously_notified_or_discarded.update(dict_worth_watching.keys())     #we add the notified tickers to the set to avoid duplicate notifications next iterations
+                        previously_notified_or_discarded.update(dict_worth_watching.keys())     # we add the notified tickers to the set to avoid duplicate notifications next iterations , we use update after union since union gives a new copy and update modifies the existing set
                         print('Done sending messages')
                         print(f'New set of notified/discarded set is {previously_notified_or_discarded}') # we print it here and not inside the previous if to debugg and check that it was cleared after close ( so that each day starts with a an empty set and doesnt carry the notified tickers from yest )
                     print(f'Sleeping for 30 mins starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
