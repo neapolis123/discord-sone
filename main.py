@@ -196,7 +196,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
     }
         
-        latest_filling_date = form[0]['_source']['file_date'] # this checks the date of the latest filling, if there is a good filling we involve the latest date and notify it there is a match
+        latest_filling_date = forms[0]['_source']['file_date'] # this checks the date of the latest filling, if there is a good filling we involve the latest date and notify it there is a match
         async with aiohttp.ClientSession(headers=headers) as s:
             for form in forms: # if forms are returns we check if they match F-1/X or S-1/X
                     id = form['_id'].split(':')  # form ['id] = "_id": "0001370053-24-000056:anab-formsx3_atm2024.htm" , we split it on the ':' which will be replace with a '/' later
