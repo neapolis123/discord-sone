@@ -53,13 +53,13 @@ async def on_ready():
                     if dict_worth_watching:   #If there are tickers to be notified
                         for ticker, info in dict_worth_watching.items():           #this is for formating so that each ticker send on chat is a hyperlink linking to the fillings
                             await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]}') # ticker = 'AAPL', info={link:xxxx,price:xxxxx}
-                        previously_notified_or_discarded = previously_notified_or_discarded.union(dict_worth_watching.keys())     #we add the notified tickers to the set to avoid duplicate notifications next iterations
+                        previously_notified_or_discarded = previously_notified_or_discarded.update(dict_worth_watching.keys())     #we add the notified tickers to the set to avoid duplicate notifications next iterations
                         print('Done sending messages')
                         print(f'New set of notified/discarded set is {previously_notified_or_discarded}') # we print it here and not inside the previous if to debugg and check that it was cleared after close ( so that each day starts with a an empty set and doesnt carry the notified tickers from yest )
                     print(f'Sleeping for 30 mins starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
-                    await asyncio.sleep(60*30 )  # every 30 mins
+                    await asyncio.sleep(60*30)  # every 30 mins
                 elif nyc_time >= nyc_close_time: # we reset the notified ticker after close
-                    previously_notified_or_discarded= blocked_set  # set gets reset after close to what we manually added as blocked, this way every day we start with the set of blocked 
+                    previously_notified_or_discarded= blocked_set.copy()  # shallow copy, set gets reset after close to what we manually added as blocked, this way every day we start with the set of blocked 
                     print(f'After hours limit, Sleeping for 9 hours starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                     print(f'The Blocked_set is {blocked_set}, assigned to previously_notified_set')
                     await asyncio.sleep(60*60*9) #sleep for 9 hours when the market is closed, so that we resume around 5 AM next day
