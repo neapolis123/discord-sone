@@ -52,7 +52,10 @@ async def on_ready():
                     print(f'notified/discarded set is {previously_notified_or_discarded}') # for ease of debugging in the future
                     if dict_worth_watching:   #If there are tickers to be notified
                         for ticker, info in dict_worth_watching.items():           #this is for formating so that each ticker send on chat is a hyperlink linking to the fillings
-                            await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]}') # ticker = 'AAPL', info={link:xxxx,price:xxxxx}
+                            if info['latest_filling_date'] == str(datetime.datetime.today().date()):
+                               await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Has a filling today ') # this checks if it has a filling today, quality of life to avoid opening everyday when something is relevant over multiple days but awaiting an amendment
+                            else:
+                               await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]}') # doesnt have a filling today
                         previously_notified_or_discarded.update(dict_worth_watching.keys())     # we add the notified tickers to the set to avoid duplicate notifications next iterations , we use update after union since union gives a new copy and update modifies the existing set
                         print('Done sending messages')
                         print(f'New set of notified/discarded set is {previously_notified_or_discarded}') # we print it here and not inside the previous if to debugg and check that it was cleared after close ( so that each day starts with a an empty set and doesnt carry the notified tickers from yest )
@@ -164,6 +167,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
     api_response = await response.json()
     hits = int(api_response['hits']['total']['value'])
     forms = api_response['hits']['hits']
+    latest_filling_date = forms[0]['_source']['file_date'] # this checks the date of the latest filling, if there is a good filling we involve the latest date and notify it there is a match
     if(not hits): # this means there is no fillings of this ticker in the past 30 days that has S-1 or EFFECT
        return # returns NONE here that gets filtered on the function that called it
     else:  # means it has S-1x fillings, we now check if its an IPO, this step filters S-1 of newly listed tickers 
@@ -203,7 +207,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
                 if 'We will not receive any' not in filling_text: # this checks if the S-1/F-1 filling is NOT a shareholders selling filling but checking for the eliminating text
                     print(f'good filling found on {ticker_dict["ticker"]}, added')
                     email_hyperlink = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker_dict["CIK"]}&owner=exclude&count=40'
-                    return  {ticker_dict['ticker']: {'link':email_hyperlink,'price':ticker_dict['price']}} # we break here as soon as we find a good one 
+                    return  {ticker_dict['ticker']: {'link':email_hyperlink,'price':ticker_dict['price'],'latest_filling_date':latest_filling_date}} # we break here as soon as we find a good one 
                 else:
                     print(f'Shareholder Resale filling found on {ticker_dict["ticker"]}, discarded')
         else:   # this else means we went through all the filling of this ticker but all of them were shareholders selling fillings and not interesting ones, we wouldn't make it here if we found a good one since we have a return that will jump over this
