@@ -167,7 +167,6 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
     api_response = await response.json()
     hits = int(api_response['hits']['total']['value'])
     forms = api_response['hits']['hits']
-    latest_filling_date = forms[0]['_source']['file_date'] # this checks the date of the latest filling, if there is a good filling we involve the latest date and notify it there is a match
     if(not hits): # this means there is no fillings of this ticker in the past 30 days that has S-1 or EFFECT
        return # returns NONE here that gets filtered on the function that called it
     else:  # means it has S-1x fillings, we now check if its an IPO, this step filters S-1 of newly listed tickers 
@@ -198,6 +197,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
     }
     async with aiohttp.ClientSession(headers=headers) as s:
         for form in forms: # if forms are returns we check if they match EFFECT or S-1
+                latest_filling_date = forms[0]['_source']['file_date'] # this checks the date of the latest filling, if there is a good filling we involve the latest date and notify it there is a match
                 id = form['_id'].split(':')  # form ['id] = "_id": "0001370053-24-000056:anab-formsx3_atm2024.htm" , we split it on the ':' which will be replace with a '/' later
                 filing_number = id[0].replace('-', '')  # we replace the dashes '-' with empty spaces to construct the filling link
                 filling_link = f'https://www.sec.gov/Archives/edgar/data/{int(ticker_dict["CIK"])}/{filing_number}/{id[1]}'
