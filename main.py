@@ -195,25 +195,26 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
         'upgrade-insecure-requests': '1',
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
     }
-    async with aiohttp.ClientSession(headers=headers) as s:
-        for form in forms: # if forms are returns we check if they match EFFECT or S-1
-                latest_filling_date = forms[0]['_source']['file_date'] # this checks the date of the latest filling, if there is a good filling we involve the latest date and notify it there is a match
-                id = form['_id'].split(':')  # form ['id] = "_id": "0001370053-24-000056:anab-formsx3_atm2024.htm" , we split it on the ':' which will be replace with a '/' later
-                filing_number = id[0].replace('-', '')  # we replace the dashes '-' with empty spaces to construct the filling link
-                filling_link = f'https://www.sec.gov/Archives/edgar/data/{int(ticker_dict["CIK"])}/{filing_number}/{id[1]}'
-                print(filling_link)
-                filling = await s.get(filling_link,ssl=False)
-                filling_text = await filling.text()
-                if 'We will not receive any' not in filling_text: # this checks if the S-1/F-1 filling is NOT a shareholders selling filling but checking for the eliminating text
-                    print(f'good filling found on {ticker_dict["ticker"]}, added')
-                    email_hyperlink = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker_dict["CIK"]}&owner=exclude&count=40'
-                    return  {ticker_dict['ticker']: {'link':email_hyperlink,'price':ticker_dict['price'],'latest_filling_date':latest_filling_date}} # we break here as soon as we find a good one 
-                else:
-                    print(f'Shareholder Resale filling found on {ticker_dict["ticker"]}, discarded')
-        else:   # this else means we went through all the filling of this ticker but all of them were shareholders selling fillings and not interesting ones, we wouldn't make it here if we found a good one since we have a return that will jump over this
-            print(f'added {ticker_dict["ticker"]} to the set of discarded_notified')
-            notified_or_discarded.add(ticker_dict['ticker'])  # here we add the ticker whole fillings are not interesting to the discarded list so that we avoid checking again next loop , to be determined if this is a good decision just in case something newer gets filed later 
-            print(f'notified/discarded set is : {notified_or_discarded}')
+        
+        latest_filling_date = form[0]['_source']['file_date'] # this checks the date of the latest filling, if there is a good filling we involve the latest date and notify it there is a match
+        async with aiohttp.ClientSession(headers=headers) as s:
+            for form in forms: # if forms are returns we check if they match F-1/X or S-1/X
+                    id = form['_id'].split(':')  # form ['id] = "_id": "0001370053-24-000056:anab-formsx3_atm2024.htm" , we split it on the ':' which will be replace with a '/' later
+                    filing_number = id[0].replace('-', '')  # we replace the dashes '-' with empty spaces to construct the filling link
+                    filling_link = f'https://www.sec.gov/Archives/edgar/data/{int(ticker_dict["CIK"])}/{filing_number}/{id[1]}'
+                    print(filling_link)
+                    filling = await s.get(filling_link,ssl=False)
+                    filling_text = await filling.text()
+                    if 'We will not receive any' not in filling_text: # this checks if the S-1/F-1 filling is NOT a shareholders selling filling but checking for the eliminating text
+                        print(f'good filling found on {ticker_dict["ticker"]}, added')
+                        email_hyperlink = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker_dict["CIK"]}&owner=exclude&count=40'
+                        return  {ticker_dict['ticker']: {'link':email_hyperlink,'price':ticker_dict['price'],'latest_filling_date':latest_filling_date}} # we break here as soon as we find a good one 
+                    else:
+                        print(f'Shareholder Resale filling found on {ticker_dict["ticker"]}, discarded')
+            else:   # this else means we went through all the filling of this ticker but all of them were shareholders selling fillings and not interesting ones, we wouldn't make it here if we found a good one since we have a return that will jump over this
+                print(f'added {ticker_dict["ticker"]} to the set of discarded_notified')
+                notified_or_discarded.add(ticker_dict['ticker'])  # here we add the ticker whole fillings are not interesting to the discarded list so that we avoid checking again next loop , to be determined if this is a good decision just in case something newer gets filed later 
+                print(f'notified/discarded set is : {notified_or_discarded}')
     return
 
 async def get_all_fillings(tickers,notified_or_discarded): # the function responsible for bundling the async API requests to the SEC API, each single call is made through function get_filling
