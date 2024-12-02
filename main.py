@@ -104,7 +104,7 @@ async def on_message(ctx):
             else: # or just a list of tickers to add one after the others APPL NFLX MOXL UMAC
                 for i in parameter:
                     blocked_set.add(i)
-                    await ctx.channel.send(f'Added {command.upper()} to the set')
+                    await ctx.channel.send(f'Added [{i.upper()}] to the set')
 
 
 
