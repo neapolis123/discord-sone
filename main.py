@@ -19,7 +19,7 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix='/',intents=intents)
 
-blocked_set = set()
+blocked_dict = dict()
 
 
 @bot.event
@@ -30,18 +30,18 @@ async def on_ready():
     nyc_close_time = datetime.time.fromisoformat('20:00:00')
     await me.send('Starting\n')
     iteration = 0
-    previously_notified_or_discarded = set()
+    previously_notified_or_discarded = dict()
     while (True):
         try:
             nyc_date = datetime.datetime.now(tz=ZoneInfo('America/New_York'))
             nyc_time = nyc_date.time()
             today = nyc_date.weekday()
-            if  0 <= today <= 4:  # if weekend just sleep
+            if  0 <= today <= 4:  # if weekend just sleep , DISCLAIMER : THE LOGIC CAN NOT WORK IN THE SITUATION WHEN SOMETHING THAT IS DETECTED AND DISCARDED BECAUSE IT HAS A SHAREHOLDER SELLING BUT THEN A FEW HOURS LATER IT HAS A GOOD FILLING, BUT SINCE WE DONT CHECK DISCARDED ONES AGAIN IT MIGHT BE MISSED, THIS CAN BE FIXED ON EXPENSE OF SOME EEFFICIENCY
                 if start <= nyc_time <= nyc_close_time: # If 7am and 8pm
                     iteration += 1
                     print(iteration)
                     dict_worth_watching = {}
-                    previously_notified_or_discarded.update(blocked_set) #adds the new blocked set to the current discarded/notifie, we do it here , might be inefficient but this way the blocked tickers are added one iteration later intead of one day later at close
+                    previously_notified_or_discarded.update(blocked_dict) #adds the new blocked set to the current discarded/notifie, we do it here , might be inefficient but this way the blocked tickers are added one iteration later intead of one day later at close
                     try:  #the previously_notified set here is updated inside play to add IPOs and Reselling Shareholders S-1s, its shared between the inner logic and this outer logic , it is reset at the end of every day
                       dict_worth_watching = await play(previously_notified_or_discarded)  # one dict with all tickers as keys {'UAVS': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40',price:5},'QUBT': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40',price:10} }
                     except Exception:                     # this dict has all the tickers that have fillings in the last 30days that include S-1 and F-1, if we reached this point, it means that these tickers will be notified because they were filtered as not preivously notified/discard in 'get_fillings' and if a a ticker has a filling but it's a seller shareholder one it will be added to the discarded without making it to this step
@@ -57,15 +57,15 @@ async def on_ready():
                                await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Has a filling today ') 
                             else:
                                await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]}') # doesnt have a filling today
-                        previously_notified_or_discarded.update(dict_worth_watching.keys())     # we add the notified tickers to the set to avoid duplicate notifications next iterations , we use update after union since union gives a new copy and update modifies the existing set
+                            previously_notified_or_discarded.update({ticker:info['latest_filling_date']})     # we add the notified tickers to the set to avoid duplicate notifications next iterations , we use update after union since union gives a new copy and update modifies the existing set
                         print('Done sending messages')
                         print(f'New set of notified/discarded set is {previously_notified_or_discarded}') # we print it here and not inside the previous if to debugg and check that it was cleared after close ( so that each day starts with a an empty set and doesnt carry the notified tickers from yest )
                     print(f'Sleeping for 20 mins starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                     await asyncio.sleep(60*20)  # every 20 mins
                 elif nyc_time >= nyc_close_time: # we reset the notified ticker after close
-                    previously_notified_or_discarded= set()  #  the previously notified set gets reset after close, it gets updated with the blocked set on every iteration in the upper logic
+                    previously_notified_or_discarded= dict()  #  the previously notified set gets reset after close, it gets updated with the blocked set on every iteration in the upper logic
                     print(f'After hours limit, Sleeping for 9 hours starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
-                    print(f'The Blocked_set is {blocked_set}, assigned to previously_notified_set') # just to have it visually visible/debug 
+                    print(f'The Blocked_set is {blocked_dict}, assigned to previously_notified_set') # just to have it visually visible/debug 
                     await asyncio.sleep(60*60*7 + ( (60 - datetime.datetime.now().time().minute) * 60 )+ (60 - datetime.datetime.now().time().second )  ) # sleep just enough to start again at 4AM exactly, we do this by waiting until the hour is ended after the market is closed that is until 21H and then we wait 8 hours from there , we calculate this by taking current minutes and subsracting them from 60 minutes and then multiply by 60 to get how many seconds until the next hours starts
                 elif nyc_time <=start:
                     print(f'Sleeping for 1 hour in Premarket, time is {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
@@ -82,7 +82,7 @@ async def on_ready():
 
 @bot.event
 async def on_message(ctx):
-    global blocked_set
+    global blocked_dict
     #if ctx.channel.type == 'private' : # gives 'private' if DM or 'text' if its a public text channel but it doesnt work cause it's not a string so we try the next IF, this is only here to show the logical steps 
     #    print(ctx.content)
     #    await ctx.channel.send(f'Done blocked {ctx.cotent}')
@@ -91,20 +91,20 @@ async def on_message(ctx):
         parameter = command.split(' ')
         if len(parameter) == 1:  #one word DM 'LIST','CLEAR' or AAPL ( just ticker symbol to add) 
             if command == 'LIST':
-                await ctx.channel.send(blocked_set)
+                await ctx.channel.send(blocked_dict)
             elif command == 'CLEAR':             
-                blocked_set= set()                          # worth noting that all modifications to the blocked set are only applied the next day
+                blocked_dict= set()                          # worth noting that all modifications to the blocked set are only applied the next day
                 await ctx.channel.send('Cleared the set')
             else: # only the TICKER is typed
-                blocked_set.add(command.upper())
+                blocked_dict.update({command.upper():'Blocked'})
                 await ctx.channel.send(f'Added [{command.upper()}] to the set')
         else:    # this means we have multiple parameters either REMOVE APPL 
-            if parameter[0] == 'REMOVE':
-                blocked_set.discard(parameter[1].upper())
+            if todelete := parameter[0] == 'REMOVE':
+                del blocked_dict[parameter[1].upper()]
                 await ctx.channel.send(f'Deleted [{parameter[1].upper()}] from the set')
             else: # or just a list of tickers to add one after the others APPL NFLX MOXL UMAC
                 for i in parameter:
-                    blocked_set.add(i) 
+                    blocked_dict.update({command.upper():'Blocked'}) 
                     await ctx.channel.send(f'Added [{i.upper()}] to the set')
    
 
@@ -176,12 +176,13 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
     if(not hits): # this means there is no fillings of this ticker in the past 30 days that has S-1 or EFFECT, equal to 0 if there is none
        return # returns NONE here that gets filtered on the function that called it
     else:  # means it has S-1x fillings, we now check if its an IPO, this step filters S-1 of newly listed tickers 
+        latest_filling_date = forms[0]['_source']['file_date'] # this checks the date of the latest filling (they are ordered latest on top), if there is a good filling we involve the latest date and notify it there is a match
         url_CERT = f'https://efts.sec.gov/LATEST/search-index?category=custom&ciks={ticker_dict["CIK"]}&forms=CERT&startdt={one_month_ago.isoformat()}&enddt={today.isoformat()}' #polls if this is a new listing/IPO by checking for CERT filling last month
         response = await session.get(url_CERT,ssl=False)
         api_response = await response.json()
         if int(api_response['hits']['total']['value']):  #its an IPO, discard
             print(f'added {ticker_dict["ticker"]} to the set of discarded_notified because its an IPO')
-            notified_or_discarded.add(ticker_dict['ticker'])
+            notified_or_discarded.add({ticker_dict['ticker']:'IPO'})
             print(f'notified/discarded set is : {notified_or_discarded}')
             return
     
@@ -201,8 +202,9 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
         'upgrade-insecure-requests': '1',
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
         }
-                              #select latest filing
-        latest_filling_date = forms[0]['_source']['file_date'] # this checks the date of the latest filling (they are ordered latest on top), if there is a good filling we involve the latest date and notify it there is a match
+                              
+        if ticker:=ticker_dict['ticker'] in notified_or_discarded.keys() and latest_filling_date == notified_or_discarded[ticker] : # this mean that we already notified for a good filling but we check again for newer fillings, if none found we disregard
+            return 
         async with aiohttp.ClientSession(headers=headers) as s:
             for form in forms: # if forms are returns we check if they match F-1/X or S-1/X
                     id = form['_id'].split(':')  # form ['id] = "_id": "0001370053-24-000056:anab-formsx3_atm2024.htm" , we split it on the ':' which will be replace with a '/' later
@@ -219,7 +221,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
                         print(f'Shareholder Resale filling found on {ticker_dict["ticker"]}, discarded')
             else:   # this else means we went through all the filling of this ticker but all of them were shareholders selling fillings and not interesting ones, we wouldn't make it here if we found a good one since we have a return that will jump over this
                 print(f'added {ticker_dict["ticker"]} to the set of discarded_notified')
-                notified_or_discarded.add(ticker_dict['ticker'])  # here we add the ticker whole fillings are not interesting to the discarded list so that we avoid checking again next loop , to be determined if this is a good decision just in case something newer gets filed later 
+                notified_or_discarded.update({ticker_dict['ticker']:latest_filling_date})  # here we add the ticker whole fillings are not interesting to the discarded list so that we avoid checking again next loop , to be determined if this is a good decision just in case something newer gets filed later 
                 print(f'notified/discarded set is : {notified_or_discarded}')
     return
 
@@ -233,14 +235,14 @@ async def get_all_fillings(tickers,notified_or_discarded): # the function respon
     conn = aiohttp.TCPConnector(limit_per_host=5)
     async with aiohttp.ClientSession(headers=headers,connector=conn) as session:
         for ticker_dict in tickers:
-            if ticker_dict['ticker'] not in notified_or_discarded: # doesnt check fillings for already discard or notified tickers 
+            #if ticker_dict['ticker'] not in notified_or_discarded: # doesnt check fillings for already discard or notified tickers 
                tasks.append(get_filling(ticker_dict, session,notified_or_discarded))  # ticker is a dict {ticker:'AAPL',CIK:013494343,gain:14,price:5}
         start = t.time()
-        results = await asyncio.gather(*tasks)  # returns a list of suc [ { 'QNTM': 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1771885&owner=exclude&count=40'}, None (means no fillings were found for that api requests) , {'SG': 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1477815&owner=exclude&count=40'} ]
+        results = await asyncio.gather(*tasks)  # returns a list of suc [ { 'QNTM': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1771885&owner=exclude&count=40',price:3,latest_filling_date:2024-24-10}}, None (means no fillings were found for that api requests) ,{  'SG': {'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1477815&owner=exclude&count=40',price:3,latest_filling_date:2024-24-10} }]
         print(f'Time to get all the fillings {t.time() - start } s')
         for result in results:
             if result is not None:  # this filters the empty API requests that had no hits by taking out the Nones
-                list_worth_watching.update(result)  # very important part here merges every dict in a single one to make it easier for search in the next step , end result { 'QNTM': 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1771885&owner=exclude&count=40','SG': 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1477815&owner=exclude&count=40'}
+                list_worth_watching.update(result)  # very important part here merges every dict in a single one to make it easier for search in the next step , end result { 'QNTM': link:{'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1771885&owner=exclude&count=40',price:3,latest_filling_date:2024-10-08},'SG': {'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1477815&owner=exclude&count=40',price:3,latest_filling_date:2024-10-08} }
         #pprint.pprint(list_worth_watching)
         return list_worth_watching
 
