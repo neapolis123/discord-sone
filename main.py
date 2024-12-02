@@ -36,7 +36,7 @@ async def on_ready():
             nyc_date = datetime.datetime.now(tz=ZoneInfo('America/New_York'))
             nyc_time = nyc_date.time()
             today = nyc_date.weekday()
-            if  0 <= today <= 4:  # if weekend just sleep , DISCLAIMER : THE LOGIC CAN NOT WORK IN THE SITUATION WHEN SOMETHING THAT IS DETECTED AND DISCARDED BECAUSE IT HAS A SHAREHOLDER SELLING BUT THEN A FEW HOURS LATER IT HAS A GOOD FILLING, BUT SINCE WE DONT CHECK DISCARDED ONES AGAIN IT MIGHT BE MISSED, THIS CAN BE FIXED ON EXPENSE OF SOME EEFFICIENCY
+            if  0 <= today <= 4:  # if weekend just sleep 
                 if start <= nyc_time <= nyc_close_time: # If 7am and 8pm
                     iteration += 1
                     print(iteration)
@@ -51,8 +51,8 @@ async def on_ready():
                       continue
                     print(f'the set to be notified is {set(dict_worth_watching.keys())}') # the set that we got from the logic {'UAVS': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40',price:5},'QUBT': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40',price:10} }
                     print(f'notified/discarded set is {previously_notified_or_discarded}') # for ease of debugging in the future
-                    if dict_worth_watching:   #If there are tickers to be notified
-                        for ticker, info in dict_worth_watching.items():           #this is for formating so that each ticker send on chat is a hyperlink linking to the fillings
+                    if dict_worth_watching:   #If there are tickers to be notified , the dict has the form of {‘AAPL':{price:5,link:'https://....',latest_filling_date:2024-02-10},'NFLX':{price:5,link:'https://....',latest_filling_date:2024-02-10}}
+                        for ticker, info in dict_worth_watching.items():    # ticker is 'NFLX' and info is a dict {price:5, link:'https://....', latest_filling_date:2024-02-10}
                             if info['latest_filling_date'] == str(datetime.datetime.today().date()): # this checks if it has a filling today, quality of life to avoid opening everyday when something is relevant over multiple days but awaiting an amendment
                                await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Has a filling today ') 
                             else:
@@ -203,9 +203,9 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
         }
                               
-        if ticker:=ticker_dict['ticker'] in notified_or_discarded.keys() and latest_filling_date == notified_or_discarded[ticker] : # this mean that we already notified for a good filling but we check again for newer fillings, if none found we disregard
+        if ticker:=ticker_dict['ticker'] in notified_or_discarded.keys() and latest_filling_date == notified_or_discarded[ticker] : # this means that we already notified for a good filling or we discarded because of a shareholder but we check again for newer fillings, if none found we disregard, since anything added manually to the blocked list will never pass the equality test here because the value is always 'Blocked', We make sure we only check notified and shareholder tickers only
             return 
-        async with aiohttp.ClientSession(headers=headers) as s:
+        async with aiohttp.ClientSession(headers=headers) as s: # means we got a newer filling for a notified or a discarded ticker or simply first time check for something that has non IPO fillings, we check if they are good or not inside 
             for form in forms: # if forms are returns we check if they match F-1/X or S-1/X
                     id = form['_id'].split(':')  # form ['id] = "_id": "0001370053-24-000056:anab-formsx3_atm2024.htm" , we split it on the ':' which will be replace with a '/' later
                     filing_number = id[0].replace('-', '')  # we replace the dashes '-' with empty spaces to construct the filling link
@@ -236,7 +236,7 @@ async def get_all_fillings(tickers,notified_or_discarded): # the function respon
     async with aiohttp.ClientSession(headers=headers,connector=conn) as session:
         for ticker_dict in tickers:
             #if ticker_dict['ticker'] not in notified_or_discarded: # doesnt check fillings for already discard or notified tickers 
-               tasks.append(get_filling(ticker_dict, session,notified_or_discarded))  # ticker is a dict {ticker:'AAPL',CIK:013494343,gain:14,price:5}
+               tasks.append(get_filling(ticker_dict, session,notified_or_discarded))  # ticker is a dict {ticker:'AAPL',CIK:013494343,gain:14,price:5}, We pass the whole dict of notified/discarded dict without any filtering
         start = t.time()
         results = await asyncio.gather(*tasks)  # returns a list of suc [ { 'QNTM': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1771885&owner=exclude&count=40',price:3,latest_filling_date:2024-24-10}}, None (means no fillings were found for that api requests) ,{  'SG': {'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1477815&owner=exclude&count=40',price:3,latest_filling_date:2024-24-10} }]
         print(f'Time to get all the fillings {t.time() - start } s')
