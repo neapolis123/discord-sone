@@ -122,7 +122,7 @@ async def bot_start():
 #import pprint
 #import datetime
 
-h =  {
+headers =  {
         'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
         'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8,fr;q=0.7',
         'cache-control': 'max-age=0',
@@ -208,7 +208,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
         if  ticker_dict['ticker'] in notified_or_discarded.keys() :
             if latest_filling_date == notified_or_discarded[ticker_dict['ticker']] or notified_or_discarded[ticker_dict['ticker']] == 'Blocked' or notified_or_discarded[ticker_dict['ticker']] == 'IPO' : 
                 return  # we filter for IPO and manually blocked tickers as well as previously notified or discarded ones that don't have newer fillings
-        async with aiohttp.ClientSession(headers=h) as s: # means we got a newer filling for a notified or a discarded ticker or simply first time check for something that has non IPO fillings, we check if they are good or not inside 
+        async with aiohttp.ClientSession(headers=headers) as s: # means we got a newer filling for a notified or a discarded ticker or simply first time check for something that has non IPO fillings, we check if they are good or not inside 
             for form in forms: # if forms are returns we check if they match F-1/X or S-1/X
                     id = form['_id'].split(':')  # form ['id] = "_id": "0001370053-24-000056:anab-formsx3_atm2024.htm" , we split it on the ':' which will be replace with a '/' later
                     filing_number = id[0].replace('-', '')  # we replace the dashes '-' with empty spaces to construct the filling link
