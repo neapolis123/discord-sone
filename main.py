@@ -19,7 +19,7 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix='/',intents=intents)
 
-blocked_dict = dict()
+blocked_dict = dict() # will be of the format {'AMIX':'2024-03-13','BLOCKED':'BLOCKED'}
 
 
 @bot.event
@@ -30,7 +30,7 @@ async def on_ready():
     nyc_close_time = datetime.time.fromisoformat('20:00:00')
     await me.send('Starting\n')
     iteration = 0
-    previously_notified_or_discarded = dict()
+    previously_notified_or_discarded = dict() # will be of the format {'AMIX':'2024-03-13','FPAY':'2023-09-09','UNTZ':'IPO'}
     while (True):
         try:
             nyc_date = datetime.datetime.now(tz=ZoneInfo('America/New_York'))
@@ -41,10 +41,10 @@ async def on_ready():
                     iteration += 1
                     print(iteration)
                     dict_worth_watching = {}
-                    previously_notified_or_discarded.update(blocked_dict) #adds the new blocked set to the current discarded/notifie, we do it here , might be inefficient but this way the blocked tickers are added one iteration later intead of one day later at close
-                    try:  #the previously_notified set here is updated inside play to add IPOs and Reselling Shareholders S-1s, its shared between the inner logic and this outer logic , it is reset at the end of every day
-                      dict_worth_watching = await play(previously_notified_or_discarded)  # one dict with all tickers as keys {'UAVS': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40',price:5},'QUBT': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40',price:10} }
-                    except Exception:                     # this dict has all the tickers that have fillings in the last 30days that include S-1 and F-1, if we reached this point, it means that these tickers will be notified because they were filtered as not preivously notified/discard in 'get_fillings' and if a a ticker has a filling but it's a seller shareholder one it will be added to the discarded without making it to this step
+                    previously_notified_or_discarded.update(blocked_dict) #adds the new blocked dict to the current discarded/notifie, we do it here , might be inefficient but this way the blocked tickers are added one iteration later intead of one day later at close
+                    try:  #the previously_notified dict here is updated inside play to add IPOs and Reselling Shareholders S-1s, its shared between the inner logic and this outer logic , it is reset at the end of every day
+                      dict_worth_watching = await play(previously_notified_or_discarded)  # one dict with all tickers as keys {'UAVS': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40',price:5,latest_filling_date:2024-02-10},'QUBT': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40',price:10,latest_filling_date:2024-02-10} }
+                    except Exception:                 # this dict has all the tickers that have fillings in the last 30days that include S-1 and F-1, if we reached this point, it means that these tickers will be notified because they were filtered as not preivously notified/discard in 'get_fillings' and if a a ticker has a filling but it's a seller shareholder one it will be added to the discarded without making it to this step
                       await me.send(f'A problem has been encountered in fetching logic: \n```{traceback.format_exc()[-1700:]}``` \nSleeping for 30 mins after failed fetched attempt at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                       print(f'Problem encountered with the logi \nSleeping for 30 mins after failed fetched attempt at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                       await asyncio.sleep(60*30)
@@ -247,7 +247,7 @@ async def get_all_fillings(tickers,notified_or_discarded): # the function respon
         return list_worth_watching
 
 
-async def play(notified_or_discarded): # only get all fillings updates the notified_or_discarded set
+async def play(notified_or_discarded): # only get all fillings updates the notified_or_discarded dict
     tickers_without_cik = premarket_gainers()
     tickers_with_cik = await add_CIKs(tickers_without_cik)
     worth_watching_list = await get_all_fillings(tickers_with_cik,notified_or_discarded)
