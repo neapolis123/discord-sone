@@ -41,7 +41,7 @@ async def on_ready():
                     iteration += 1
                     print(iteration)
                     dict_worth_watching = {}
-                    previously_notified_or_discarded.update(blocked_set) #adds the new blocked set to the current discarded/notified
+                    previously_notified_or_discarded.update(blocked_set) #adds the new blocked set to the current discarded/notifie, we do it here , might be inefficient but this way the blocked tickers are added one iteration later intead of one day later at close
                     try:  #the previously_notified set here is updated inside play to add IPOs and Reselling Shareholders S-1s, its shared between the inner logic and this outer logic , it is reset at the end of every day
                       dict_worth_watching = await play(previously_notified_or_discarded)  # one dict with all tickers as keys {'UAVS': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40',price:5},'QUBT': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40',price:10} }
                     except Exception:                     # this dict has all the tickers that have fillings in the last 30days that include S-1 and F-1, if we reached this point, it means that these tickers will be notified because they were filtered as not preivously notified/discard in 'get_fillings' and if a a ticker has a filling but it's a seller shareholder one it will be added to the discarded without making it to this step
@@ -63,9 +63,9 @@ async def on_ready():
                     print(f'Sleeping for 20 mins starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                     await asyncio.sleep(60*20)  # every 20 mins
                 elif nyc_time >= nyc_close_time: # we reset the notified ticker after close
-                    previously_notified_or_discarded= blocked_set.copy()  # shallow copy, set gets reset after close to what we manually added as blocked, this way every day we start with the set of blocked 
+                    previously_notified_or_discarded= set()  #  the previously notified set gets reset after close, it gets updated with the blocked set on every iteration in the upper logic
                     print(f'After hours limit, Sleeping for 9 hours starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
-                    print(f'The Blocked_set is {blocked_set}, assigned to previously_notified_set')
+                    print(f'The Blocked_set is {blocked_set}, assigned to previously_notified_set') # just to have it visually visible/debug 
                     await asyncio.sleep(60*60*7 + (60 - datetime.datetime.now().time().minute)*60 ) # sleep just enough to start again at 4AM exactly, we do this by waiting until the hour is ended after the market is closed that is until 21H and then we wait 8 hours from there , we calculate this by taking current minutes and subsracting them from 60 minutes and then multiply by 60 to get how many seconds until the next hours starts
                 elif nyc_time <=start:
                     print(f'Sleeping for 1 hour in Premarket, time is {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
