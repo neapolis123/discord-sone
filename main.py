@@ -197,17 +197,17 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
         api_response = await response.json()
         if int(api_response['hits']['total']['value']):  #its an IPO, discard
             print(f'added {ticker_dict["ticker"]} to the set of discarded_notified because its an IPO')
-            notified_or_discarded.update({ticker_dict['ticker']:'IPO'})
+            notified_or_discarded.update({ticker_dict['ticker']:'IPO'}) # we update the notified_dict with {'UAVS':'2014-12-12'}
             print(f'notified/discarded set is : {notified_or_discarded}')
             return
     
         # if we reach here it means we have good S/F-1x fillings that are NOT an IPO, we now scan the S-1 fillings to check if they are REsale of shareholders 
 
 
-        # the lower test means that we already notified for a good filling or we discarded because of a shareholder but we check again for newer fillings, if none found we disregard, since anything added manually to the blocked list will never pass the equality test here because the value is always 'Blocked', We make sure we only check notified and shareholder tickers only                      
-        if  ticker_dict['ticker'] in notified_or_discarded.keys() :
-            if latest_filling_date == notified_or_discarded[ticker_dict['ticker']] or notified_or_discarded[ticker_dict['ticker']] == 'Blocked' or notified_or_discarded[ticker_dict['ticker']] == 'IPO' : 
-                return  # we filter for IPO and manually blocked tickers as well as previously notified or discarded ones that don't have newer fillings
+        # we check if we already notified for a good filling or we discarded because of a shareholder but we check again for newer fillings, if none found we disregard, since anything added manually to the blocked list will never pass the equality test here because the value is always 'Blocked', We make sure we only check notified and shareholder tickers only                      
+        if  ticker_dict['ticker'] in notified_or_discarded.keys() : #was this ticker previously discarde/notified
+            if latest_filling_date == notified_or_discarded[ticker_dict['ticker']] or notified_or_discarded[ticker_dict['ticker']] == 'Blocked' or notified_or_discarded[ticker_dict['ticker']] == 'IPO' : # we filter for IPO and manually blocked tickers as well as previously notified or discarded ones that don't have newer fillings
+                return  
         async with aiohttp.ClientSession(headers=headers) as s: # means we got a newer filling for a notified or a discarded ticker or simply first time check for something that has non IPO fillings, we check if they are good or not inside 
             for form in forms: # if forms are returns we check if they match F-1/X or S-1/X
                     id = form['_id'].split(':')  # form ['id] = "_id": "0001370053-24-000056:anab-formsx3_atm2024.htm" , we split it on the ':' which will be replace with a '/' later
