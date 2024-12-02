@@ -117,7 +117,7 @@ async def bot_start():
 #import datetime
 
 
-def premarket_gainers(price_limit=1):
+def premarket_gainers(lower_price_limit=1,upper_price_limit=30): # we filter out tickers than are pennies ( Sub 1 dollar) and mid-large caps ( over 30 dollar which is already high )
     url = "https://quotes-gw.webullfintech.com/api/bgw/market/topGainers?regionId=6&pageIndex=1&pageSize=150"
     headers = {
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36', }
@@ -131,7 +131,7 @@ def premarket_gainers(price_limit=1):
             continue
         gain = int(float(info['changeRatio']) * 100)
         price = int(float(ticker['values']['price']))
-        if (price > price_limit):
+        if (price > lower_price_limit and price < upper_price_limit):
             tickers.append({'ticker': lean_ticker, 'price': price, 'gain': gain})
     #pprint.pprint(tickers)
     return tickers
