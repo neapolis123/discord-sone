@@ -26,7 +26,7 @@ blocked_set = set()
 async def on_ready():
     #channel = bot.get_channel(1306738767280738354) good to keep if i decide to change from DMS to channels posting
     me = await bot.fetch_user(253660472803328002)
-    start = datetime.time.fromisoformat('05:00:00')
+    start = datetime.time.fromisoformat('04:00:00')
     nyc_close_time = datetime.time.fromisoformat('20:00:00')
     await me.send('Starting\n')
     iteration = 0
@@ -59,16 +59,16 @@ async def on_ready():
                         previously_notified_or_discarded.update(dict_worth_watching.keys())     # we add the notified tickers to the set to avoid duplicate notifications next iterations , we use update after union since union gives a new copy and update modifies the existing set
                         print('Done sending messages')
                         print(f'New set of notified/discarded set is {previously_notified_or_discarded}') # we print it here and not inside the previous if to debugg and check that it was cleared after close ( so that each day starts with a an empty set and doesnt carry the notified tickers from yest )
-                    print(f'Sleeping for 30 mins starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
-                    await asyncio.sleep(60*30)  # every 30 mins
+                    print(f'Sleeping for 20 mins starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
+                    await asyncio.sleep(60*20)  # every 20 mins
                 elif nyc_time >= nyc_close_time: # we reset the notified ticker after close
                     previously_notified_or_discarded= blocked_set.copy()  # shallow copy, set gets reset after close to what we manually added as blocked, this way every day we start with the set of blocked 
                     print(f'After hours limit, Sleeping for 9 hours starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                     print(f'The Blocked_set is {blocked_set}, assigned to previously_notified_set')
-                    await asyncio.sleep(60*60*8 + (60 - datetime.datetime.now().time().minute)*60 ) # sleep just enough to start again at 5AM exactly, we do this by waiting until the hour is ended after the market is closed that is until 21H and then we wait 8 hours from there , we calculate this by taking current minutes and subsracting them from 60 minutes and then multiply by 60 to get how many seconds until the next hours starts
+                    await asyncio.sleep(60*60*7 + (60 - datetime.datetime.now().time().minute)*60 ) # sleep just enough to start again at 4AM exactly, we do this by waiting until the hour is ended after the market is closed that is until 21H and then we wait 8 hours from there , we calculate this by taking current minutes and subsracting them from 60 minutes and then multiply by 60 to get how many seconds until the next hours starts
                 elif nyc_time <=start:
                     print(f'Sleeping for 1 hour in Premarket, time is {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
-                    await asyncio.sleep(60*60)  # sleep for an hour since it's probably around 4:XX AM and not worth it to check early before 7 am
+                    await asyncio.sleep(60*60)  # sleep for an hour since it's probably Before 4:XX AM 
             else:
                 print(f'Weekend, Sleeping for 48 hours starting {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                 await asyncio.sleep(60*60*48)
@@ -195,7 +195,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
         'upgrade-insecure-requests': '1',
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
         }
-        
+                              #select latest filing
         latest_filling_date = forms[0]['_source']['file_date'] # this checks the date of the latest filling (they are ordered latest on top), if there is a good filling we involve the latest date and notify it there is a match
         async with aiohttp.ClientSession(headers=headers) as s:
             for form in forms: # if forms are returns we check if they match F-1/X or S-1/X
