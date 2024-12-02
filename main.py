@@ -41,6 +41,7 @@ async def on_ready():
                     iteration += 1
                     print(iteration)
                     dict_worth_watching = {}
+                    previously_notified_or_discarded.update(blocked_set) #adds the new blocked set to the current one
                     try:  #the previously_notified set here is updated inside play to add IPOs and Reselling Shareholders S-1s, its shared between the inner logic and this outer logic , it is reset at the end of every day
                       dict_worth_watching = await play(previously_notified_or_discarded)  # one dict with all tickers as keys {'UAVS': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40',price:5},'QUBT': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40',price:10} }
                     except Exception:                     # this dict has all the tickers that have fillings in the last 30days that include S-1 and F-1, if we reached this point, it means that these tickers will be notified because they were filtered as not preivously notified/discard in 'get_fillings' and if a a ticker has a filling but it's a seller shareholder one it will be added to the discarded without making it to this step
@@ -80,8 +81,7 @@ async def on_ready():
 
 
 @bot.event
-async def on_message(ctx):
-    global blocked_set
+async def on_message(ctx,blocked_set):
     #if ctx.channel.type == 'private' : # gives 'private' if DM or 'text' if its a public text channel but it doesnt work cause it's not a string so we try the next IF, this is only here to show the logical steps 
     #    print(ctx.content)
     #    await ctx.channel.send(f'Done blocked {ctx.cotent}')
