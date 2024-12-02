@@ -66,7 +66,7 @@ async def on_ready():
                     previously_notified_or_discarded= set()  #  the previously notified set gets reset after close, it gets updated with the blocked set on every iteration in the upper logic
                     print(f'After hours limit, Sleeping for 9 hours starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                     print(f'The Blocked_set is {blocked_set}, assigned to previously_notified_set') # just to have it visually visible/debug 
-                    await asyncio.sleep(60*60*7 + (60 - datetime.datetime.now().time().minute)*60 ) # sleep just enough to start again at 4AM exactly, we do this by waiting until the hour is ended after the market is closed that is until 21H and then we wait 8 hours from there , we calculate this by taking current minutes and subsracting them from 60 minutes and then multiply by 60 to get how many seconds until the next hours starts
+                    await asyncio.sleep(60*60*7 + ( (60 - datetime.datetime.now().time().minute) * 60 )+ (60 - datetime.datetime.now().time().second )  ) # sleep just enough to start again at 4AM exactly, we do this by waiting until the hour is ended after the market is closed that is until 21H and then we wait 8 hours from there , we calculate this by taking current minutes and subsracting them from 60 minutes and then multiply by 60 to get how many seconds until the next hours starts
                 elif nyc_time <=start:
                     print(f'Sleeping for 1 hour in Premarket, time is {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                     await asyncio.sleep(60*60)  # sleep for an hour since it's probably Before 4:XX AM 
