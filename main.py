@@ -97,10 +97,15 @@ async def on_message(ctx):
             else: #TICKER 
                 blocked_set.add(command.upper())
                 await ctx.channel.send(f'Added {command.upper()} to the set')
-        else:    # to remove just REMOVE Ticker or R Ticker
-            blocked_set.discard(parameter[1].upper())
-            await ctx.channel.send(f'Deleted {parameter[1].upper()} from the set')
-            
+        else:    # this means we have multiple parameters either REMOVE APPL 
+            if parameter[0] == 'REMOVE':
+                blocked_set.discard(parameter[1].upper())
+                await ctx.channel.send(f'Deleted {parameter[1].upper()} from the set')
+            else: # or just a list of tickers to add one after the others APPL NFLX MOXL UMAC
+                for i in parameter:
+                    blocked_set.add(i)
+                    await ctx.channel.send(f'Added {command.upper()} to the set')
+
 
 
 async def bot_start():
