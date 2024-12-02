@@ -204,8 +204,9 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
         }
 
         # the lower test means that we already notified for a good filling or we discarded because of a shareholder but we check again for newer fillings, if none found we disregard, since anything added manually to the blocked list will never pass the equality test here because the value is always 'Blocked', We make sure we only check notified and shareholder tickers only                      
-        if ( ticker_dict['ticker'] in notified_or_discarded.keys() and latest_filling_date == notified_or_discarded[ticker_dict['ticker']] ) or (notified_or_discarded[ticker_dict['ticker']] =='Blocked' or notified_or_discarded[ticker_dict['ticker']] == 'IPO' ) : 
-            return  # we filter for IPO and manually blocked tickers as well as previously notified or discarded ones that don't have newer fillings
+        if  ticker_dict['ticker'] in notified_or_discarded.keys():
+            if latest_filling_date == notified_or_discarded[ticker_dict['ticker']] or notified_or_discarded[ticker_dict['ticker']] == 'Blocked' or notified_or_discarded[ticker_dict['ticker']] == 'IPO' : 
+                return  # we filter for IPO and manually blocked tickers as well as previously notified or discarded ones that don't have newer fillings
         async with aiohttp.ClientSession(headers=headers) as s: # means we got a newer filling for a notified or a discarded ticker or simply first time check for something that has non IPO fillings, we check if they are good or not inside 
             for form in forms: # if forms are returns we check if they match F-1/X or S-1/X
                     id = form['_id'].split(':')  # form ['id] = "_id": "0001370053-24-000056:anab-formsx3_atm2024.htm" , we split it on the ':' which will be replace with a '/' later
