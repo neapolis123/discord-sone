@@ -57,7 +57,7 @@ async def on_ready():
                                await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Has a filling today ') 
                             else:
                                await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]}') # doesnt have a filling today
-                            previously_notified_or_discarded.update({ticker:info['latest_filling_date']})     # we add the notified tickers to the set to avoid duplicate notifications next iterations , we use update after union since union gives a new copy and update modifies the existing set
+                            previously_notified_or_discarded.update({ticker:info['latest_filling_date']})  # we add the notified tickers to the set to avoid duplicate notifications next iterations , we use update after union since union gives a new copy and update modifies the existing set
                         print('Done sending messages')
                         print(f'New set of notified/discarded set is {previously_notified_or_discarded}') # we print it here and not inside the previous if to debugg and check that it was cleared after close ( so that each day starts with a an empty set and doesnt carry the notified tickers from yest )
                     print(f'Sleeping for 20 mins starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
@@ -99,7 +99,7 @@ async def on_message(ctx):
                 blocked_dict.update({command.upper():'Blocked'})
                 await ctx.channel.send(f'Added [{command.upper()}] to the set')
         else:    # this means we have multiple parameters either REMOVE APPL 
-            if todelete := parameter[0] == 'REMOVE':
+            if parameter[0] == 'REMOVE':
                 del blocked_dict[parameter[1].upper()]
                 await ctx.channel.send(f'Deleted [{parameter[1].upper()}] from the set')
             else: # or just a list of tickers to add one after the others APPL NFLX MOXL UMAC
@@ -203,7 +203,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
         }
                               
-        if ticker:=ticker_dict['ticker'] in notified_or_discarded.keys() and latest_filling_date == notified_or_discarded[ticker] : # this means that we already notified for a good filling or we discarded because of a shareholder but we check again for newer fillings, if none found we disregard, since anything added manually to the blocked list will never pass the equality test here because the value is always 'Blocked', We make sure we only check notified and shareholder tickers only
+        if ticker_dict['ticker'] in notified_or_discarded.keys() and latest_filling_date == notified_or_discarded[ticker_dict['ticker']] : # this means that we already notified for a good filling or we discarded because of a shareholder but we check again for newer fillings, if none found we disregard, since anything added manually to the blocked list will never pass the equality test here because the value is always 'Blocked', We make sure we only check notified and shareholder tickers only
             return 
         async with aiohttp.ClientSession(headers=headers) as s: # means we got a newer filling for a notified or a discarded ticker or simply first time check for something that has non IPO fillings, we check if they are good or not inside 
             for form in forms: # if forms are returns we check if they match F-1/X or S-1/X
