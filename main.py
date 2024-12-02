@@ -92,20 +92,20 @@ async def on_message(ctx):
             if command == 'LIST':
                 await ctx.channel.send(blocked_set)
             elif command == 'CLEAR':             
-                blocked_set= set()
+                blocked_set= set()                          # worth noting that all modifications to the blocked set are only applied the next day
                 await ctx.channel.send('Cleared the set')
-            else: #TICKER 
+            else: # only the TICKER is typed
                 blocked_set.add(command.upper())
-                await ctx.channel.send(f'Added {command.upper()} to the set')
+                await ctx.channel.send(f'Added [{command.upper()}] to the set')
         else:    # this means we have multiple parameters either REMOVE APPL 
             if parameter[0] == 'REMOVE':
                 blocked_set.discard(parameter[1].upper())
-                await ctx.channel.send(f'Deleted {parameter[1].upper()} from the set')
+                await ctx.channel.send(f'Deleted [{parameter[1].upper()}] from the set')
             else: # or just a list of tickers to add one after the others APPL NFLX MOXL UMAC
                 for i in parameter:
-                    blocked_set.add(i)
+                    blocked_set.add(i) 
                     await ctx.channel.send(f'Added [{i.upper()}] to the set')
-
+   
 
 
 async def bot_start():
@@ -123,7 +123,7 @@ async def bot_start():
 
 
 def premarket_gainers(lower_price_limit=1,upper_price_limit=30): # we filter out tickers than are pennies ( Sub 1 dollar) and mid-large caps ( over 30 dollar which is already high )
-    url = "https://quotes-gw.webullfintech.com/api/bgw/market/topGainers?regionId=6&pageIndex=1&pageSize=150"
+    url = "https://quotes-gw.webullfintech.com/api/bgw/market/topGainers?regionId=6&pageIndex=1&pageSize=200" # the number of tickers is at the end 
     headers = {
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36', }
     response = requests.get(url, headers=headers)  # single call so its okay to make in synchronously
