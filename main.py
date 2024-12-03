@@ -60,8 +60,8 @@ async def on_ready():
                             previously_notified_or_discarded.update({ticker:info['latest_filling_date']})  # we add the notified tickers to the set to avoid duplicate notifications next iterations , we use update after union since union gives a new copy and update modifies the existing set
                         print('Done sending messages')
                         print(f'New set of notified/discarded set is {previously_notified_or_discarded}') # we print it here and not inside the previous if to debugg and check that it was cleared after close ( so that each day starts with a an empty set and doesnt carry the notified tickers from yest )
-                    print(f'Sleeping for 20 mins starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
-                    await asyncio.sleep(60*20)  # every 20 mins
+                    print(f'Sleeping for 15 mins starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
+                    await asyncio.sleep(60*15)  # every 15 mins
                 elif nyc_time >= nyc_close_time: # we reset the notified ticker after close
                     seconds_until_4AM = (60*60*7 + ( (60 - datetime.datetime.now().time().minute) * 60 )+ (60 - datetime.datetime.now().time().second ))
                     previously_notified_or_discarded= dict()  #  the previously notified set gets reset after close, it gets updated with the blocked set on every iteration in the upper logic
