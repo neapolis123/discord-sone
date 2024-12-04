@@ -217,7 +217,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
                     print(filling_link)
                     filling = await s.get(filling_link,ssl=False)
                     filling_text = await filling.text()
-                    if 'will not receive any' not in filling_text: # this checks if the S-1/F-1 filling is NOT a shareholders selling filling but checking for the eliminating text
+                    if 'will not receive any proceeds' not in filling_text or 'will not receive any of the proceeds' not in filling_text: # this checks if the S-1/F-1 filling is NOT a shareholders selling filling but checking for the eliminating text
                         print(f'good filling found on {ticker_dict["ticker"]}, added')
                         email_hyperlink = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker_dict["CIK"]}&owner=exclude&count=100'
                         return  {ticker_dict['ticker']: {'link':email_hyperlink,'price':ticker_dict['price'],'latest_filling_date':latest_filling_date}} # we break here as soon as we find a good one 
