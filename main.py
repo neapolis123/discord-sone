@@ -21,6 +21,8 @@ bot = commands.Bot(command_prefix='/',intents=intents)
 
 blocked_dict = dict() # will be of the format {'AMIX':'2024-03-13','BLOCKED':'BLOCKED'}
 
+currently_running = set()
+
 
 @bot.event
 async def on_ready():
@@ -44,7 +46,7 @@ async def on_ready():
                     previously_notified_or_discarded.update(blocked_dict) #adds the new blocked dict to the current discarded/notifie, we do it here , might be inefficient but this way the blocked tickers are added one iteration later intead of one day later at close
                     try:  #the previously_notified dict here is updated inside play to add IPOs and Reselling Shareholders S-1s, its shared between the inner logic and this outer logic , it is reset at the end of every day
                       dict_worth_watching = await play(previously_notified_or_discarded)  # one dict with all tickers as keys {'UAVS': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40',price:5,latest_filling_date:2024-02-10},'QUBT': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40',price:10,latest_filling_date:2024-02-10} }
-                    except Exception:                 # this dict has all the tickers that have fillings in the last 30days that include S-1 and F-1, if we reached this point, it means that these tickers will be notified because they were filtered as not preivously notified/discard in 'get_fillings' and if a a ticker has a filling but it's a seller shareholder one it will be added to the discarded without making it to this step
+                    except Exception: # this dict has all the tickers that have fillings in the last 30days that include S-1 and F-1, if we reached this point, it means that these tickers will be notified because they were filtered as not preivously notified/discard in 'get_fillings' and if a a ticker has a filling but it's a seller shareholder one it will be added to the discarded without making it to this step
                       await me.send(f'A problem has been encountered in fetching logic: \n```{traceback.format_exc()[-1700:]}``` \nSleeping for 30 mins after failed fetched attempt at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                       print(f'Problem encountered with the logic \nSleeping for 30 mins after failed fetched attempt at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                       await asyncio.sleep(60*30)
@@ -53,8 +55,18 @@ async def on_ready():
                     print(f'notified/discarded set is {previously_notified_or_discarded}') # for ease of debugging in the future
                     if dict_worth_watching:   #If there are tickers to be notified , the dict has the form of {‘AAPL':{price:5,link:'https://....',latest_filling_date:2024-02-10},'NFLX':{price:5,link:'https://....',latest_filling_date:2024-02-10}}
                         for ticker, info in dict_worth_watching.items():    # ticker is 'NFLX' and info is a dict {price:5, link:'https://....', latest_filling_date:2024-02-10}
-                            if info['latest_filling_date'] == str(datetime.datetime.today().date()): # this checks if it has a filling today, quality of life to avoid opening everyday when something is relevant over multiple days but awaiting an amendment
-                               await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Has a filling today ') 
+                            if info['gain'] > 60 :
+                                if ticker in previously_notified_or_discarded.keys():
+                                    await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Is currently running with a previously notified filling')
+                                else:
+                                    if info['latest_filling_date'] == str(datetime.datetime.today().date()) :
+                                        await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Is currently running + filling today')
+                                    else :
+                                        await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Is currently running with a filling')
+       
+                                currently_running.add(ticker) 
+                            elif info['latest_filling_date'] == str(datetime.datetime.today().date()): # this checks if it has a filling today, quality of life to avoid opening everyday when something is relevant over multiple days but awaiting an amendment
+                               await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Has a filling today') 
                             else:
                                await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]}') # doesnt have a filling today
                             previously_notified_or_discarded.update({ticker:info['latest_filling_date']})  # we add the notified tickers to the set to avoid duplicate notifications next iterations , we use update after union since union gives a new copy and update modifies the existing set
@@ -205,11 +217,16 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
 
         # if we reach here it means we have good S/F-1x fillings that are NOT an IPO, we now scan the S-1 fillings to check if they are REsale of shareholders 
 
-
+        
         # we check if we already notified for a good filling or we discarded because of a shareholder but we check again for newer fillings, if none found we disregard, since anything added manually to the blocked list will never pass the equality test here because the value is always 'Blocked', We make sure we only check notified and shareholder tickers only                      
-        if  ticker_dict['ticker'] in notified_or_discarded.keys() : # was this ticker previously discarde/notified
-            if latest_filling_date == notified_or_discarded[ticker_dict['ticker']] or any(notified_or_discarded[ticker_dict['ticker']]==value for value in ['Blocked','IPO'] )  : # we filter for IPO and manually blocked tickers as well as previously notified or discarded ones that don't have newer fillings
-                return  
+        if  ticker_dict['ticker'] in notified_or_discarded.keys() and all(notified_or_discarded[ticker_dict['ticker']]!=value for value in ['Blocked','IPO'] ): # was this ticker previously discarded/notified and NOT and IPO/blocked  
+            if ticker_dict['gain'] < 60:
+                if latest_filling_date == notified_or_discarded[ticker_dict['ticker']]: # previously notified and not blocked and is NOT running  : # does this previously notified ticker that is not running have a new filling ? if no return else jump to the logic
+                    return  
+            else:  # the previously notified ticker is running
+                if ticker_dict['ticker'] in currently_running: # we already notified that this previously notified ticker is running 
+                    return
+
         async with aiohttp.ClientSession(headers=headers) as s: # means we got a newer filling for a notified or a discarded ticker or simply first time check for something that has non IPO fillings, we check if they are good or not inside 
             for form in forms: # if forms are returns we check if they match F-1/X or S-1/X,
                     id = form['_id'].split(':')  # form ['id] = "_id": "0001370053-24-000056:anab-formsx3_atm2024.htm" , we split it on the ':' which will be replace with a '/' later
@@ -222,7 +239,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
                     if all(el not in filling_text for el in eliminating_text) : #longer version :'will not receive any proceeds' not in filling_text and 'will not receive any of the proceeds' not in filling_text: # this checks if the S-1/F-1 filling is NOT a shareholders selling filling but checking for the eliminating text
                         print(f'good filling found on {ticker_dict["ticker"]}, added') 
                         email_hyperlink = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker_dict["CIK"]}&owner=exclude&count=100'
-                        return  {ticker_dict['ticker']: {'link':email_hyperlink,'price':ticker_dict['price'],'latest_filling_date':latest_filling_date}} # we break here as soon as we find a good one 
+                        return  {ticker_dict['ticker']: {'link':email_hyperlink,'price':ticker_dict['price'],'latest_filling_date':latest_filling_date,'gain':ticker_dict['gain']}} # we break here as soon as we find a good one 
                     else:
                         print(f'Shareholder Resale filling found on {ticker_dict["ticker"]}, discarded')
             else:   # this else means we went through all the filling of this ticker but all of them were shareholders selling fillings and not interesting ones, we wouldn't make it here if we found a good one since we have a return that will jump over this
