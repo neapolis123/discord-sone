@@ -56,17 +56,17 @@ async def on_ready():
                     if dict_worth_watching:   #If there are tickers to be notified , the dict has the form of {‘AAPL':{price:5,link:'https://....',latest_filling_date:2024-02-10},'NFLX':{price:5,link:'https://....',latest_filling_date:2024-02-10}}
                         for ticker, info in dict_worth_watching.items():    # ticker is 'NFLX' and info is a dict {price:5, link:'https://....', latest_filling_date:2024-02-10}
                             if info['gain'] > 60 :
-                                if ticker in previously_notified_or_discarded.keys():
+                                #if ticker in previously_notified_or_discarded.keys():
                                     if info['latest_filling_date'] == str(datetime.datetime.today().date()) :
                                         await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Is currently running + filling today')
                                     else:
-                                        await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Is currently running with a previously notified filling')
-                                else:
-                                    if info['latest_filling_date'] == str(datetime.datetime.today().date()) :
-                                        await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Is currently running + filling today')
-                                    else :
                                         await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Is currently running with a filling')
-                                currently_running.add(ticker) 
+                                #else:
+                                #    if info['latest_filling_date'] == str(datetime.datetime.today().date()) :
+                                #        await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Is currently running + filling today')
+                                #    else :
+                                #        await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Is currently running with a filling')
+                                    currently_running.add(ticker) 
 
                             elif info['latest_filling_date'] == str(datetime.datetime.today().date()): # this checks if it has a filling today, quality of life to avoid opening everyday when something is relevant over multiple days but awaiting an amendment
                                await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Has a filling today') 
