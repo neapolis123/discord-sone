@@ -223,11 +223,12 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
 
         # if we reach here it means we have good S/F-1x fillings that are NOT an IPO, we now scan the S-1 fillings to check if they are Resale of shareholders 
         
-        # we check if we already notified for a good filling or we discarded because of a shareholder but we check again for newer fillings, if none found we disregard, since anything added manually to the blocked list will never pass the equality test here because the value is always 'Blocked', We make sure we only check notified and shareholder tickers only                      
+        # this block is a filter that discards previously notified or currently running tickers with no new fillings                 
         if  ticker_dict['ticker'] in notified_or_discarded.keys(): # was this ticker previously discarded/notified and NOT and IPO/blocked  
             if ticker_dict['gain'] < 60: #is the ticker not running now, this is made in order to notify us AGAIN that a ticker previously notified on this week is CURRENTLY running
                 if latest_filling_date == notified_or_discarded[ticker_dict['ticker']]: # previously notified and not blocked/IPO and is NOT running , we discard it
                     return  # it is not running and no newer fillings, discard
+                        # indrectly , if a ticker is not running and has newer filling they are not discard and jump to the async block to be processed for selling shareholder 
             else:  # a ticker that is currently running AND previously notified 
                 if ticker_dict['ticker'] in currently_running and latest_filling_date == notified_or_discarded[ticker_dict['ticker']] : # have we notified that this ticker is running and if even if yes, we check if it has a newer filling since last time, if yes we don't discard it and let the logic update it 
                     return # it has been notified that is running and doesnt have a newer filling, we discard
