@@ -27,6 +27,7 @@ currently_running = set()
 @bot.event
 async def on_ready():
     #channel = bot.get_channel(1306738767280738354) good to keep if i decide to change from DMS to channels posting
+    global currently_running
     me = await bot.fetch_user(253660472803328002)
     start = datetime.time.fromisoformat('04:00:00')
     nyc_close_time = datetime.time.fromisoformat('20:00:00')
@@ -80,7 +81,8 @@ async def on_ready():
                 elif nyc_time >= nyc_close_time: # we reset the notified ticker after close
                     seconds_until_4AM = (60*60*7 + ( (59 - datetime.datetime.now().time().minute) * 60 )+ (60 - datetime.datetime.now().time().second ))
                     print(f'After hours limit, Sleeping for  {str(datetime.timedelta(seconds=seconds_until_4AM))} starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}PM')
-                    print(f'The Blocked_set is {blocked_dict}, assigned to previously_notified_set') # just to have it visually visible/debug 
+                    #print(f'The Blocked_set is {blocked_dict}, assigned to previously_notified_set') # just to have it visually visible/debug 
+                    currently_running = set()
                     await asyncio.sleep(seconds_until_4AM) # sleep just enough to start again at 4AM exactly, we do this by waiting until the hour is ended after the market is closed that is until 21H and then we wait 8 hours from there , we calculate this by taking current minutes and subsracting them from 60 minutes and then multiply by 60 to get how many seconds until the next hours starts
                 elif nyc_time <=start:
                     print(f'Sleeping for 1 hour in Premarket, time is {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
