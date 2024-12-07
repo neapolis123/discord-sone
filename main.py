@@ -57,13 +57,15 @@ async def on_ready():
                         for ticker, info in dict_worth_watching.items():    # ticker is 'NFLX' and info is a dict {price:5, link:'https://....', latest_filling_date:2024-02-10}
                             if info['gain'] > 60 :
                                 if ticker in previously_notified_or_discarded.keys():
-                                    await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Is currently running with a previously notified filling')
+                                    if info['latest_filling_date'] == str(datetime.datetime.today().date()) :
+                                        await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Is currently running with a new filling today')
+                                    else:
+                                        await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Is currently running with a previously notified filling')
                                 else:
                                     if info['latest_filling_date'] == str(datetime.datetime.today().date()) :
                                         await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Is currently running + filling today')
                                     else :
                                         await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Is currently running with a filling')
-       
                                 currently_running.add(ticker) 
                             elif info['latest_filling_date'] == str(datetime.datetime.today().date()): # this checks if it has a filling today, quality of life to avoid opening everyday when something is relevant over multiple days but awaiting an amendment
                                await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Has a filling today') 
@@ -224,7 +226,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
                 if latest_filling_date == notified_or_discarded[ticker_dict['ticker']]: # previously notified and not blocked and is NOT running  : # does this previously notified ticker that is not running have a new filling ? if no return else jump to the logic
                     return  
             else:  # the previously notified ticker is running
-                if ticker_dict['ticker'] in currently_running: # we already notified that this previously notified ticker is running 
+                if ticker_dict['ticker'] in currently_running and latest_filling_date == notified_or_discarded[ticker_dict['ticker']] : # we already notified that this previously notified ticker is running and it doesnt have a newer filling, we do this to make sure even if something has been notified as running and a new filling is detected we notify again
                     return
 
         async with aiohttp.ClientSession(headers=headers) as s: # means we got a newer filling for a notified or a discarded ticker or simply first time check for something that has non IPO fillings, we check if they are good or not inside 
