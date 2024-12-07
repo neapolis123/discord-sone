@@ -200,6 +200,9 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
     today = datetime.date.today()                             # ticker_dict has format {ticker:AAPL,price:X,gain:Y,CIK:Z}
     one_month_ago = today - datetime.timedelta(days=days_limit)
     
+    if notified_or_discarded.get(ticker_dict['ticker'])=='Blocked' or notified_or_discarded.get(ticker_dict['ticker'])=='IPO': 
+        return
+    
     url = f"https://efts.sec.gov/LATEST/search-index?category=custom%20S-1&ciks={str(ticker_dict['CIK']).zfill(10)}&&forms=F-1%2CF-1MEF%2CS-1%2CS-1MEF&&startdt={one_month_ago.isoformat()}&enddt={today.isoformat()}" #this tries to pull all the S-1, S-1/A, S-1/MEF F-1 and F-1/A/MEF from the last 30 days
     response = await session.get(url,ssl=False)
     api_response = await response.json() # an example at https://efts.sec.gov/LATEST/search-index?q=S-1&category=form-cat0&ciks=0001956955&entityName=Unusual%20Machines%2C%20Inc.%20%20(CIK%200001956955)&forms=-3%2C-4%2C-5&startdt=2019-11-29&enddt=2024-11-29
@@ -218,17 +221,16 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
             print(f'notified/discarded set is : {notified_or_discarded}')
             return
 
-        # if we reach here it means we have good S/F-1x fillings that are NOT an IPO, we now scan the S-1 fillings to check if they are REsale of shareholders 
-
+        # if we reach here it means we have good S/F-1x fillings that are NOT an IPO, we now scan the S-1 fillings to check if they are Resale of shareholders 
         
         # we check if we already notified for a good filling or we discarded because of a shareholder but we check again for newer fillings, if none found we disregard, since anything added manually to the blocked list will never pass the equality test here because the value is always 'Blocked', We make sure we only check notified and shareholder tickers only                      
-        if  ticker_dict['ticker'] in notified_or_discarded.keys() and all(notified_or_discarded[ticker_dict['ticker']]!=value for value in ['Blocked','IPO'] ): # was this ticker previously discarded/notified and NOT and IPO/blocked  
-            if ticker_dict['gain'] < 60:
-                if latest_filling_date == notified_or_discarded[ticker_dict['ticker']]: # previously notified and not blocked and is NOT running  : # does this previously notified ticker that is not running have a new filling ? if no return else jump to the logic
-                    return  
-            else:  # the previously notified ticker is running
-                if ticker_dict['ticker'] in currently_running and latest_filling_date == notified_or_discarded[ticker_dict['ticker']] : # we already notified that this previously notified ticker is running and it doesnt have a newer filling, we do this to make sure even if something has been notified as running and a new filling is detected we notify again
-                    return
+        if  ticker_dict['ticker'] in notified_or_discarded.keys(): # was this ticker previously discarded/notified and NOT and IPO/blocked  
+            if ticker_dict['gain'] < 60: #is the ticker not running now, this is made in order to notify us AGAIN that a ticker previously notified on this week is CURRENTLY running
+                if latest_filling_date == notified_or_discarded[ticker_dict['ticker']]: # previously notified and not blocked/IPO and is NOT running , we discard it
+                    return  # it is not running and no newer fillings, discard
+            else:  # a ticker that is currently running AND previously notified 
+                if ticker_dict['ticker'] in currently_running and latest_filling_date == notified_or_discarded[ticker_dict['ticker']] : # have we notified that this ticker is running and if even if yes, we check if it has a newer filling since last time, if yes we don't discard it and let the logic update it 
+                    return # it has been notified that is running and doesnt have a newer filling, we discard
 
         async with aiohttp.ClientSession(headers=headers) as s: # means we got a newer filling for a notified or a discarded ticker or simply first time check for something that has non IPO fillings, we check if they are good or not inside 
             for form in forms: # if forms are returns we check if they match F-1/X or S-1/X,
