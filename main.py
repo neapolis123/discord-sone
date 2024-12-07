@@ -232,6 +232,8 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
                 if ticker_dict['ticker'] in currently_running and latest_filling_date == notified_or_discarded[ticker_dict['ticker']] : # have we notified that this ticker is running and if even if yes, we check if it has a newer filling since last time, if yes we don't discard it and let the logic update it 
                     return # it has been notified that is running and doesnt have a newer filling, we discard
 
+        # Here we filter for shareholder resale fillings and discard them,and if it's a good filling we forward it to be notified 
+
         async with aiohttp.ClientSession(headers=headers) as s: # means we got a newer filling for a notified or a discarded ticker or simply first time check for something that has non IPO fillings, we check if they are good or not inside 
             for form in forms: # if forms are returns we check if they match F-1/X or S-1/X,
                     id = form['_id'].split(':')  # form ['id] = "_id": "0001370053-24-000056:anab-formsx3_atm2024.htm" , we split it on the ':' which will be replace with a '/' later
