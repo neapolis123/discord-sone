@@ -56,7 +56,7 @@ async def on_ready():
                     print(f'notified/discarded set is {previously_notified_or_discarded}') # for ease of debugging in the future
                     if dict_worth_watching:   #If there are tickers to be notified , the dict has the form of {‘AAPL':{price:5,link:'https://....',latest_filling_date:2024-02-10},'NFLX':{price:5,link:'https://....',latest_filling_date:2024-02-10}}
                         for ticker, info in dict_worth_watching.items():    # ticker is 'NFLX' and info is a dict {price:5, link:'https://....', latest_filling_date:2024-02-10}
-                            if info['gain'] > 60 : # the ticker to notify is running, we don't care if we previously notified this or not ( both filling or running)
+                            if info['gain'] >= 60 : # the ticker to notify is running, we don't care if we previously notified this or not ( both filling or running)
                                 #if ticker in previously_notified_or_discarded.keys():
                                     if info['latest_filling_date'] == str(datetime.datetime.today().date()) :
                                         await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Is currently running + filling today')
@@ -158,7 +158,7 @@ headers =  {
         }
 
 def premarket_gainers(lower_price_limit=1,upper_price_limit=30): # we filter out tickers than are pennies ( Sub 1 dollar) and mid-large caps ( over 30 dollar which is already high )
-    url = "https://quotes-gw.webullfintech.com/api/bgw/market/topGainers?regionId=6&pageIndex=1&pageSize=150" # the number of tickers is at the end 
+    url = "https://quotes-gw.webullfintech.com/api/bgw/market/topGainers?regionId=6&pageIndex=1&pageSize=100" # the number of tickers is at the end 
     headers = {
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36', }
     response = requests.get(url, headers=headers)  # single call so its okay to make in synchronously
