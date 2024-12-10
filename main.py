@@ -170,8 +170,8 @@ def premarket_gainers(lower_price_limit=1,upper_price_limit=30): # we filter out
         if ' ' in lean_ticker:  # sometimes a symbol like GTN-A is writen by the API as GTN A, so we eliminite all weird looking symbols
             continue
         gain = int(float(info['changeRatio']) * 100)
-        price = int(float(ticker['values']['price']))
-        if (price >= lower_price_limit and price < upper_price_limit):
+        price = int(float(ticker['values']['price'])) # will be rounded down, 1.4 will be 1 and 2.6 will be 2 as an int
+        if (price > lower_price_limit and price < upper_price_limit): # excluse to make sure tickers with 1.X format dont get detected, to be determined if this good or not
             tickers.append({'ticker': lean_ticker, 'price': price, 'gain': gain})
     #pprint.pprint(tickers)
     return tickers
