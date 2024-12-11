@@ -207,6 +207,9 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
     
     url = f"https://efts.sec.gov/LATEST/search-index?category=custom%20S-1&ciks={str(ticker_dict['CIK']).zfill(10)}&&forms=F-1%2CF-1MEF%2CS-1%2CS-1MEF&&startdt={one_month_ago.isoformat()}&enddt={today.isoformat()}" #this tries to pull all the S-1, S-1/A, S-1/MEF F-1 and F-1/A/MEF from the last 30 days
     response = await session.get(url,ssl=False)
+    if response.status == 403: # sometimes the server just throttles us
+        print(f"acccess was denied for ticker {ticker_dict['ticker']} with url: , was skipped")
+        return
     api_response = await response.json() # an example at https://efts.sec.gov/LATEST/search-index?q=S-1&category=form-cat0&ciks=0001956955&entityName=Unusual%20Machines%2C%20Inc.%20%20(CIK%200001956955)&forms=-3%2C-4%2C-5&startdt=2019-11-29&enddt=2024-11-29
     hits = int(api_response['hits']['total']['value'])
     forms = api_response['hits']['hits'] # returns a list of  dicts (each dict is a form ) 
