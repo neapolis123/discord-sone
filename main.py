@@ -158,7 +158,7 @@ headers =  {
         }
 
 def premarket_gainers(lower_price_limit=1,upper_price_limit=30): # we filter out tickers than are pennies ( Sub 1 dollar) and mid-large caps ( over 30 dollar which is already high )
-    url = "https://quotes-gw.webullfintech.com/api/bgw/market/topGainers?regionId=6&pageIndex=1&pageSize=100" # the number of tickers is at the end 
+    url = "https://quotes-gw.webullfintech.com/api/bgw/market/topGainers?regionId=6&pageIndex=1&pageSize=150" # the number of tickers is at the end 
     headers = {
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36', }
     response = requests.get(url, headers=headers)  # single call so its okay to make in synchronously
