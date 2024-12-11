@@ -23,7 +23,7 @@ blocked_dict = dict() # will be of the format {'AMIX':'2024-03-13','BLOCKED':'BL
 
 currently_running = set() # if something has been notified previously but is currently running we put it here so that we only notified once more 
 
-errors = set() # when there is an error fetching we save the timestamp here 
+errors = list() # when there is an error fetching we save the timestamp here 
 
 @bot.event
 async def on_ready():
@@ -116,7 +116,7 @@ async def on_message(ctx):
                 blocked_dict= set()                          # worth noting that all modifications to the blocked set are only applied the next day
                 await ctx.channel.send('Cleared the set')
             elif command == 'ERRORS':
-                await ctx.channel.send(errors)
+                await ctx.channel.send(f'{errors} with length {len(errors)}')
             else: # only the TICKER is typed
                 blocked_dict.update({command.upper():'Blocked'})
                 await ctx.channel.send(f'Added [{command.upper()}] to the set')
@@ -162,7 +162,7 @@ headers =  {
         }
 
 def premarket_gainers(lower_price_limit=1,upper_price_limit=30): # we filter out tickers than are pennies ( Sub 1 dollar) and mid-large caps ( over 30 dollar which is already high )
-    url = "https://quotes-gw.webullfintech.com/api/bgw/market/topGainers?regionId=6&pageIndex=1&pageSize=100" # the number of tickers is at the end 
+    url = "https://quotes-gw.webullfintech.com/api/bgw/market/topGainers?regionId=6&pageIndex=1&pageSize=200" # the number of tickers is at the end 
     headers = {
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36', }
     response = requests.get(url, headers=headers)  # single call so its okay to make in synchronously
@@ -216,7 +216,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
         print(f"acccess was denied for ticker {ticker_dict['ticker']} with url: , was skipped") # we print in the console but since we don't check the console all the time
         error_time = datetime.datetime.now(ZoneInfo('Africa/Tunis')) # we snapshot the timestamp
         formated_error_timestamp_tunis_time = str(error_time.date()) + ' ' + str(error_time.strftime("%H:%M")) # format it to be easily readable
-        errors.add(formated_error_timestamp_tunis_time) # then save it in a set to be consulted on demand 
+        errors.append(formated_error_timestamp_tunis_time) # then save it in a set to be consulted on demand 
         print(f'error timestamp {formated_error_timestamp_tunis_time} added ') # we print for debugging
         print(errors) # incase we have the console open 
         return
