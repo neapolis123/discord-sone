@@ -266,7 +266,7 @@ async def get_all_fillings(tickers,notified_or_discarded): # the function respon
         'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8,fr;q=0.7',
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
     }
-    conn = aiohttp.TCPConnector(limit_per_host=3,limit=30)
+    conn = aiohttp.TCPConnector(limit_per_host=30)
     async with aiohttp.ClientSession(headers=headers,connector=conn) as session:
         for ticker_dict in tickers:
             #if ticker_dict['ticker'] not in notified_or_discarded: # doesnt check fillings for already discard or notified tickers 
