@@ -270,7 +270,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
             else:   # this else means we went through all the filling of this ticker but all of them were shareholders selling fillings and not interesting ones, we wouldn't make it here if we found a good one since we have a return that will jump over this
                 print(f'added {ticker_dict["ticker"]} to the set of discarded_notified')
                 notified_or_discarded.update({ticker_dict['ticker']:latest_filling_date})  # here we add the ticker whole fillings are not interesting to the discarded list so that we avoid checking again next loop , to be determined if this is a good decision just in case something newer gets filed later 
-                print(f'notified/discarded set is : {notified_or_discarded}') 
+                #print(f'notified/discarded set is : {notified_or_discarded}') 
     return  
 
  # the function responsible for bundling the async API requests to the SEC API, each single call is made through function get_filling
@@ -281,7 +281,7 @@ async def get_all_fillings(tickers,notified_or_discarded): # tickers is a list o
         'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8,fr;q=0.7',
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
     }
-    conn = aiohttp.TCPConnector(limit_per_host=6)
+    conn = aiohttp.TCPConnector(limit_per_host=8)
     async with aiohttp.ClientSession(headers=headers,connector=conn) as session:
         for ticker_dict in tickers:
             #if ticker_dict['ticker'] not in notified_or_discarded: # doesnt check fillings for already discard or notified tickers 
