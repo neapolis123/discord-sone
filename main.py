@@ -29,7 +29,7 @@ errors = list() # when there is an error fetching we save the timestamp here
 async def on_ready():
     #channel = bot.get_channel(1306738767280738354) good to keep if i decide to change from DMS to channels posting
     global currently_running
-    me = await bot.fetch_user(253660472803328002)
+    me = await bot.fetch_user(253660472803328002) # my discord id 
     start = datetime.time.fromisoformat('04:00:00')
     nyc_close_time = datetime.time.fromisoformat('20:00:00')
     await me.send('Starting\n')
@@ -213,7 +213,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
     url = f"https://efts.sec.gov/LATEST/search-index?category=custom%20S-1&ciks={str(ticker_dict['CIK']).zfill(10)}&&forms=F-1%2CF-1MEF%2CS-1%2CS-1MEF&&startdt={one_month_ago.isoformat()}&enddt={today.isoformat()}" #this tries to pull all the S-1, S-1/A, S-1/MEF F-1 and F-1/A/MEF from the last 30 days
     response = await session.get(url,ssl=False)
     if response.status == 403: # sometimes the server just throttles us
-        print(f"acccess was denied for ticker {ticker_dict['ticker']} with url: , was skipped") # we print in the console but since we don't check the console all the time
+        print(f"acccess was denied for ticker {ticker_dict['ticker']} with url: {url} , was skipped") # we print in the console but since we don't check the console all the time
         error_time = datetime.datetime.now(ZoneInfo('Africa/Tunis')) # we snapshot the timestamp
         formated_error_timestamp_tunis_time = str(error_time.date()) + ' ' + str(error_time.strftime("%H:%M")) # format it to be easily readable
         errors.append(formated_error_timestamp_tunis_time) # then save it in a set to be consulted on demand 
