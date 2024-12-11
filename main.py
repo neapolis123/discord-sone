@@ -162,7 +162,7 @@ headers =  {
         }
 
 def premarket_gainers(lower_price_limit=1,upper_price_limit=30): # we filter out tickers than are pennies ( Sub 1 dollar) and mid-large caps ( over 30 dollar which is already high )
-    url = "https://quotes-gw.webullfintech.com/api/bgw/market/topGainers?regionId=6&pageIndex=1&pageSize=150" # the number of tickers is at the end 
+    url = "https://quotes-gw.webullfintech.com/api/bgw/market/topGainers?regionId=6&pageIndex=1&pageSize=100" # the number of tickers is at the end 
     headers = {
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36', }
     response = requests.get(url, headers=headers)  # single call so its okay to make in synchronously
@@ -264,7 +264,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
                         return
                     if all(el not in filling_text for el in eliminating_text) : #longer version :'will not receive any proceeds' not in filling_text and 'will not receive any of the proceeds' not in filling_text: # this checks if the S-1/F-1 filling is NOT a shareholders selling filling but checking for the eliminating text
                         print(f'good filling found on {ticker_dict["ticker"]}') 
-                        email_hyperlink = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker_dict["CIK"]}&owner=exclude&count=100'
+                        email_hyperlink = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker_dict["CIK"]}&owner=exclude&count=200'
                         return  {ticker_dict['ticker']: {'link':email_hyperlink,'price':ticker_dict['price'],'latest_filling_date':latest_filling_date,'gain':ticker_dict['gain']}} # we break here as soon as we find a good one 
                     else:
                         print(f'Shareholder Resale filling found on {ticker_dict["ticker"]}, discarded')
@@ -274,22 +274,22 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
                 print(f'notified/discarded set is : {notified_or_discarded}') 
     return  
 
-
-async def get_all_fillings(tickers,notified_or_discarded): # the function responsible for bundling the async API requests to the SEC API, each single call is made through function get_filling
+ # the function responsible for bundling the async API requests to the SEC API, each single call is made through function get_filling
+async def get_all_fillings(tickers,notified_or_discarded): # tickers is a list of dicts [ {'CIK':'000129847','ticker:'ACIU','gain': 19, 'price': 3},{'CIK':'000129847','ticker':'ADGM','gain': 34, 'price': 3} ], notified_or_discard is a dict with format {'AAPL':'2024-12-25','NFLX':'2023-08-30'}
     tasks = []
     list_worth_watching = dict()
     headers = {
         'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8,fr;q=0.7',
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
     }
-    conn = aiohttp.TCPConnector(limit_per_host=4)
+    conn = aiohttp.TCPConnector(limit_per_host=10)
     async with aiohttp.ClientSession(headers=headers,connector=conn) as session:
         for ticker_dict in tickers:
             #if ticker_dict['ticker'] not in notified_or_discarded: # doesnt check fillings for already discard or notified tickers 
                tasks.append(get_filling(ticker_dict, session,notified_or_discarded))  # ticker is a dict {ticker:'AAPL',CIK:013494343,gain:14,price:5}, We pass the whole dict of notified/discarded dict without any filtering
         start = t.time()
         results = await asyncio.gather(*tasks)  # returns a list of suc [ { 'QNTM': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1771885&owner=exclude&count=40',price:3,latest_filling_date:2024-24-10}}, None (means no fillings were found for that api requests) ,{  'SG': {'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1477815&owner=exclude&count=40',price:3,latest_filling_date:2024-24-10} }]
-        print(f'Time to get all the fillings {t.time() - start } s')
+        print(f'Time to get all the {len(tickers)} fillings {t.time() - start }s')
         for result in results:
             if result is not None:  # this filters the empty API requests that had no hits by taking out the Nones
                 list_worth_watching.update(result)  # very important part here merges every dict in a single one to make it easier for search in the next step , end result { 'QNTM': link:{'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1771885&owner=exclude&count=40',price:3,latest_filling_date:2024-10-08},'SG': {'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1477815&owner=exclude&count=40',price:3,latest_filling_date:2024-10-08} }
