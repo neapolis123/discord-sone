@@ -21,8 +21,9 @@ bot = commands.Bot(command_prefix='/',intents=intents)
 
 blocked_dict = dict() # will be of the format {'AMIX':'2024-03-13','BLOCKED':'BLOCKED'}
 
-currently_running = set()
+currently_running = set() # if something has been notified previously but is currently running we put it here so that we only notified once more 
 
+errors = set() # when there is an error fetching we save the timestamp here 
 
 @bot.event
 async def on_ready():
@@ -114,6 +115,8 @@ async def on_message(ctx):
             elif command == 'CLEAR':             
                 blocked_dict= set()                          # worth noting that all modifications to the blocked set are only applied the next day
                 await ctx.channel.send('Cleared the set')
+            elif command == 'ERRORS':
+                await ctx.channel.send(errors)
             else: # only the TICKER is typed
                 blocked_dict.update({command.upper():'Blocked'})
                 await ctx.channel.send(f'Added [{command.upper()}] to the set')
@@ -125,6 +128,7 @@ async def on_message(ctx):
                 for i in parameter:
                     blocked_dict.update({i.upper():'Blocked'}) 
                     await ctx.channel.send(f'Added [{i.upper()}] to the set')
+        
    
 
 
@@ -199,6 +203,7 @@ async def add_CIKs(tickers):  # This takes the dictionary and adds the CIKs to i
 
 
 async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30):  # we hit the SEC API to get the fillings from 30 days that has EFFECT or S-1
+    global errors
     today = datetime.date.today()                             # ticker_dict has format {ticker:AAPL,price:X,gain:Y,CIK:Z}
     one_month_ago = today - datetime.timedelta(days=days_limit)
     
@@ -208,7 +213,12 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
     url = f"https://efts.sec.gov/LATEST/search-index?category=custom%20S-1&ciks={str(ticker_dict['CIK']).zfill(10)}&&forms=F-1%2CF-1MEF%2CS-1%2CS-1MEF&&startdt={one_month_ago.isoformat()}&enddt={today.isoformat()}" #this tries to pull all the S-1, S-1/A, S-1/MEF F-1 and F-1/A/MEF from the last 30 days
     response = await session.get(url,ssl=False)
     if response.status == 403: # sometimes the server just throttles us
-        print(f"acccess was denied for ticker {ticker_dict['ticker']} with url: , was skipped")
+        print(f"acccess was denied for ticker {ticker_dict['ticker']} with url: , was skipped") # we print in the console but since we don't check the console all the time
+        error_time = datetime.datetime.now(ZoneInfo('Africa/Tunis')) # we snapshot the timestamp
+        formated_error_timestamp_tunis_time = str(error_time.date()) + ' ' + str(error_time.strftime("%H:%M")) # format it to be easily readable
+        errors.add(formated_error_timestamp_tunis_time) # then save it in a set to be consulted on demand 
+        print(f'error timestamp {formated_error_timestamp_tunis_time} added ') # we print for debugging
+        print(errors) # incase we have the console open 
         return
     api_response = await response.json() # an example at https://efts.sec.gov/LATEST/search-index?q=S-1&category=form-cat0&ciks=0001956955&entityName=Unusual%20Machines%2C%20Inc.%20%20(CIK%200001956955)&forms=-3%2C-4%2C-5&startdt=2019-11-29&enddt=2024-11-29
     hits = int(api_response['hits']['total']['value'])
@@ -253,7 +263,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
                         print(f"SEC site is down when trying to retreive ticker {ticker_dict['ticker']} with url: {filling_link}")
                         return
                     if all(el not in filling_text for el in eliminating_text) : #longer version :'will not receive any proceeds' not in filling_text and 'will not receive any of the proceeds' not in filling_text: # this checks if the S-1/F-1 filling is NOT a shareholders selling filling but checking for the eliminating text
-                        print(f'good filling found on {ticker_dict["ticker"]}, url : {filling_link} added') 
+                        print(f'good filling found on {ticker_dict["ticker"]}') 
                         email_hyperlink = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker_dict["CIK"]}&owner=exclude&count=100'
                         return  {ticker_dict['ticker']: {'link':email_hyperlink,'price':ticker_dict['price'],'latest_filling_date':latest_filling_date,'gain':ticker_dict['gain']}} # we break here as soon as we find a good one 
                     else:
