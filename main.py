@@ -22,7 +22,7 @@ bot = commands.Bot(command_prefix='/',intents=intents)
 blocked_dict = dict() # will be of the format {'AMIX':'2024-03-13','BLOCKED':'BLOCKED'}
 
 currently_running = set() # if something has been notified previously but is currently running we put it here so that we only notified once more 
-
+running_threshold = 30
 errors = list() # when there is an error fetching we save the timestamp here 
 
 @bot.event
@@ -57,7 +57,7 @@ async def on_ready():
                     print(f'notified/discarded set is {previously_notified_or_discarded}') # for ease of debugging in the future
                     if dict_worth_watching:   #If there are tickers to be notified , the dict has the form of {‘AAPL':{price:5,link:'https://....',latest_filling_date:2024-02-10},'NFLX':{price:5,link:'https://....',latest_filling_date:2024-02-10}}
                         for ticker, info in dict_worth_watching.items():    # ticker is 'NFLX' and info is a dict {price:5, link:'https://....', latest_filling_date:2024-02-10}
-                            if info['gain'] >= 60 : # the ticker to notify is running, we don't care if we previously notified this or not ( both filling or running)
+                            if info['gain'] >= running_threshold : # the ticker to notify is running, we don't care if we previously notified this or not ( both filling or running)
                                 #if ticker in previously_notified_or_discarded.keys():
                                     if info['latest_filling_date'] == str(datetime.datetime.today().date()) :
                                         await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Is currently running + filling today')
@@ -239,7 +239,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
         
         # this block is a filter that discards previously notified or currently running tickers with no new fillings                 
         if  ticker_dict['ticker'] in notified_or_discarded.keys(): # was this ticker previously discarded/notified and NOT and IPO/blocked  
-            if ticker_dict['gain'] < 60: #is the ticker not running now, this is made in order to notify us AGAIN that a ticker previously notified on this week is CURRENTLY running
+            if ticker_dict['gain'] < running_threshold: #is the ticker not running now, this is made in order to notify us AGAIN that a ticker previously notified on this week is CURRENTLY running, the running_threshhold is the % over which we want to consider something to be running , 30% for us 
                 if latest_filling_date == notified_or_discarded[ticker_dict['ticker']]: # previously notified and not blocked/IPO and is NOT running + no newer fillings, we discard it
                     return  # it is not running and no newer fillings, discard
                         # indirectly , if a ticker is not running and has newer filling they are not discard and jump to the async block to be processed for selling shareholder 
