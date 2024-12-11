@@ -218,7 +218,6 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
         formated_error_timestamp_tunis_time = str(error_time.date()) + ' ' + str(error_time.strftime("%H:%M")) # format it to be easily readable
         errors.append(formated_error_timestamp_tunis_time) # then save it in a set to be consulted on demand 
         print(f'error timestamp {formated_error_timestamp_tunis_time} added ') # we print for debugging
-        print(errors) # incase we have the console open 
         return
     api_response = await response.json() # an example at https://efts.sec.gov/LATEST/search-index?q=S-1&category=form-cat0&ciks=0001956955&entityName=Unusual%20Machines%2C%20Inc.%20%20(CIK%200001956955)&forms=-3%2C-4%2C-5&startdt=2019-11-29&enddt=2024-11-29
     hits = int(api_response['hits']['total']['value'])
@@ -282,7 +281,7 @@ async def get_all_fillings(tickers,notified_or_discarded): # tickers is a list o
         'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8,fr;q=0.7',
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
     }
-    conn = aiohttp.TCPConnector(limit_per_host=10)
+    conn = aiohttp.TCPConnector(limit_per_host=8)
     async with aiohttp.ClientSession(headers=headers,connector=conn) as session:
         for ticker_dict in tickers:
             #if ticker_dict['ticker'] not in notified_or_discarded: # doesnt check fillings for already discard or notified tickers 
