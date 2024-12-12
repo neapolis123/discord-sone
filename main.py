@@ -40,10 +40,10 @@ intents.message_content = True
 bot = commands.Bot(command_prefix='/',intents=intents)
 
 blocked_dict = dict() # will be of the format {'AMIX':'2024-03-13','BLOCKED':'BLOCKED'}
-
+number_of_days_for_fillings = 30 # 
 currently_running = set() # if something has been notified previously but is currently running we put it here so that we only notified once more 
-running_threshold = 30 # the percentage over which something is considered running
-gainers_upper_limit = 30  # we filter out tickers above 30 dollars 
+running_threshold = 30 #% the percentage over which something is considered running
+gainers_upper_limit = 30  #$ we filter out tickers above 30 dollars 
 gainers_lower_limit = 1 # we filter out penny tickers
 errors = list() # when there is an error fetching we save the timestamp here 
 
@@ -203,7 +203,7 @@ async def add_CIKs(tickers):  # This takes the dictionary and adds the CIKs to i
         return tickers
 
 
-async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30):  # we hit the SEC API to get the fillings from 30 days that has EFFECT or S-1
+async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=number_of_days_for_fillings):  # we hit the SEC API to get the fillings from 30 days that has EFFECT or S-1
     global errors
     today = datetime.date.today()                             # ticker_dict has format {ticker:AAPL,price:X,gain:Y,CIK:Z}
     one_month_ago = today - datetime.timedelta(days=days_limit)
