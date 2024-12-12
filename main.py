@@ -43,7 +43,7 @@ blocked_dict = dict() # will be of the format {'AMIX':'2024-03-13','BLOCKED':'BL
 number_of_days_for_fillings = 30 # 
 currently_running = set() # if something has been notified previously but is currently running we put it here so that we only notified once more 
 running_threshold = 30 #% the percentage over which something is considered running
-gainers_upper_limit = 30  #$ we filter out tickers above 30 dollars 
+gainers_upper_limit = 20  #$ we filter out tickers above 30 dollars 
 gainers_lower_limit = 1 # we filter out penny tickers
 errors = list() # when there is an error fetching we save the timestamp here 
 
