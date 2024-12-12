@@ -1,3 +1,23 @@
+headers =  {
+        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8,fr;q=0.7',
+        'cache-control': 'max-age=0',
+        'priority': 'u=0, i',
+        'sec-ch-ua': '"Chromium";v="130", "Google Chrome";v="130", "Not?A_Brand";v="99"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"macOS"',
+        'sec-fetch-dest': 'document',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-site': 'none',
+        'sec-fetch-user': '?1',
+        'upgrade-insecure-requests': '1',
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
+        }
+
+# https://www.youtube.com/watch?v=nFn4_nA_yk8&t=786s&ab_channel=PatrickCollins explains the asyncio principle
+# https://www.youtube.com/watch?v=Ii7x4mpIhIs&t=189s&ab_channel=JohnWatsonRooney another example
+
+
 
 import discord
 from discord.ext import commands
@@ -22,7 +42,7 @@ bot = commands.Bot(command_prefix='/',intents=intents)
 blocked_dict = dict() # will be of the format {'AMIX':'2024-03-13','BLOCKED':'BLOCKED'}
 
 currently_running = set() # if something has been notified previously but is currently running we put it here so that we only notified once more 
-running_threshold = 30
+running_threshold = 30 # the percentage over which something is considered running
 errors = list() # when there is an error fetching we save the timestamp here 
 
 @bot.event
@@ -54,7 +74,7 @@ async def on_ready():
                       await asyncio.sleep(60*30)
                       continue
                     print(f'the set to be notified is {set(dict_worth_watching.keys())}') # the set that we got from the logic {'UAVS': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40',price:5},'QUBT': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40',price:10} }
-                    print(f'notified/discarded set is {previously_notified_or_discarded}') # for ease of debugging in the future
+                    #print(f'notified/discarded set is {previously_notified_or_discarded}') # for ease of debugging in the future
                     if dict_worth_watching:   #If there are tickers to be notified , the dict has the form of {‘AAPL':{price:5,link:'https://....',latest_filling_date:2024-02-10},'NFLX':{price:5,link:'https://....',latest_filling_date:2024-02-10}}
                         for ticker, info in dict_worth_watching.items():    # ticker is 'NFLX' and info is a dict {price:5, link:'https://....', latest_filling_date:2024-02-10}
                             if info['gain'] >= running_threshold : # the ticker to notify is running, we don't care if we previously notified this or not ( both filling or running)
@@ -136,30 +156,6 @@ async def bot_start():
      await bot.start(os.getenv('TOKEN',None))
 
 
-# https://www.youtube.com/watch?v=nFn4_nA_yk8&t=786s&ab_channel=PatrickCollins explains the asyncio principle
-# https://www.youtube.com/watch?v=Ii7x4mpIhIs&t=189s&ab_channel=JohnWatsonRooney another example
-
-#import asyncio
-#import aiohttp
-#import requests
-#import pprint
-#import datetime
-
-headers =  {
-        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-        'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8,fr;q=0.7',
-        'cache-control': 'max-age=0',
-        'priority': 'u=0, i',
-        'sec-ch-ua': '"Chromium";v="130", "Google Chrome";v="130", "Not?A_Brand";v="99"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"macOS"',
-        'sec-fetch-dest': 'document',
-        'sec-fetch-mode': 'navigate',
-        'sec-fetch-site': 'none',
-        'sec-fetch-user': '?1',
-        'upgrade-insecure-requests': '1',
-        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
-        }
 
 def premarket_gainers(lower_price_limit=1,upper_price_limit=30): # we filter out tickers than are pennies ( Sub 1 dollar) and mid-large caps ( over 30 dollar which is already high )
     url = "https://quotes-gw.webullfintech.com/api/bgw/market/topGainers?regionId=6&pageIndex=1&pageSize=150" # the number of tickers is at the end 
@@ -232,7 +228,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=30): 
         if int(api_response['hits']['total']['value']):  #its an IPO, discard
             print(f'added {ticker_dict["ticker"]} to the set of discarded_notified because its an IPO')
             notified_or_discarded.update({ticker_dict['ticker']:'IPO'}) # we update the notified_dict with {'UAVS':'2014-12-12'}
-            print(f'notified/discarded set is : {notified_or_discarded}') # for debugging
+            #print(f'notified/discarded set is : {notified_or_discarded}') # for debugging
             return
 
         # if we reach here it means we have good S/F-1x fillings that are NOT an IPO, we now scan the S-1 fillings to check if they are Resale of shareholders 
