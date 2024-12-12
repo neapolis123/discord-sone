@@ -137,9 +137,9 @@ async def on_message(ctx):
                 await ctx.channel.send('Cleared the set')
             elif command == 'ERRORS':
                 if len(errors) :
-                    await ctx.channel.send(f'No Errors')
+                    await ctx.channel.send(f'{errors} with length {len(errors)}')
                 else:   
-                     await ctx.channel.send(f'{errors} with length {len(errors)}')
+                    await ctx.channel.send(f'No Errors')
             else: # only the TICKER is typed
                 blocked_dict.update({command.upper():'Blocked'})
                 await ctx.channel.send(f'Added [{command.upper()}] to the set')
