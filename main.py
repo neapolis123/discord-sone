@@ -96,7 +96,7 @@ async def on_ready():
                                await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]}') # doesnt have a filling today
                             previously_notified_or_discarded.update({ticker:info['latest_filling_date']})  # we add the notified tickers to the set to avoid duplicate notifications next iterations , we use update after union since union gives a new copy and update modifies the existing set
                         print('Done sending messages')
-                        print(f'New set of notified/discarded set is {previously_notified_or_discarded}') # we print it here and not inside the previous if to debugg and check that it was cleared after close ( so that each day starts with a an empty set and doesnt carry the notified tickers from yest )
+                    print(f'New set of notified/discarded set is {previously_notified_or_discarded}') # we print it here and not inside the previous if to debugg and check that it was cleared after close ( so that each day starts with a an empty set and doesnt carry the notified tickers from yest )
                     print(f'Sleeping for 15 mins starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                     await asyncio.sleep(60*15)  # every 15  mins
                 elif nyc_time >= nyc_close_time: # we reset the notified ticker after close
@@ -136,7 +136,10 @@ async def on_message(ctx):
                 blocked_dict= set()                          # worth noting that all modifications to the blocked set are only applied the next day
                 await ctx.channel.send('Cleared the set')
             elif command == 'ERRORS':
-                await ctx.channel.send(f'{errors} with length {len(errors)}')
+                if len(errors) :
+                    await ctx.channel.send(f'No Errors')
+                else:   
+                     await ctx.channel.send(f'{errors} with length {len(errors)}')
             else: # only the TICKER is typed
                 blocked_dict.update({command.upper():'Blocked'})
                 await ctx.channel.send(f'Added [{command.upper()}] to the set')
