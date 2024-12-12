@@ -43,6 +43,8 @@ blocked_dict = dict() # will be of the format {'AMIX':'2024-03-13','BLOCKED':'BL
 
 currently_running = set() # if something has been notified previously but is currently running we put it here so that we only notified once more 
 running_threshold = 30 # the percentage over which something is considered running
+gainers_upper_limit = 30  # we filter out tickers above 30 dollars 
+gainers_lower_limit = 1 # we filter out penny tickers
 errors = list() # when there is an error fetching we save the timestamp here 
 
 @bot.event
@@ -101,15 +103,15 @@ async def on_ready():
                     await asyncio.sleep(60*15)  # every 15  mins
                 elif nyc_time >= nyc_close_time: # we reset the notified ticker after close
                     seconds_until_4AM = (60*60*7 + ( (59 - datetime.datetime.now().time().minute) * 60 )+ (60 - datetime.datetime.now().time().second ))
-                    print(f'After hours limit, Sleeping for  {str(datetime.timedelta(seconds=seconds_until_4AM))} starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}PM')
+                    print(f'After hours limit, Sleeping for  {str(datetime.timedelta(seconds=seconds_until_4AM))} starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}PM NYC ')
                     #print(f'The Blocked_set is {blocked_dict}, assigned to previously_notified_set') # just to have it visually visible/debug 
                     currently_running = set()
                     await asyncio.sleep(seconds_until_4AM) # sleep just enough to start again at 4AM exactly, we do this by waiting until the hour is ended after the market is closed that is until 21H and then we wait 8 hours from there , we calculate this by taking current minutes and subsracting them from 60 minutes and then multiply by 60 to get how many seconds until the next hours starts
                 elif nyc_time <=start:
-                    print(f'Sleeping for 1 hour in Premarket, time is {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
+                    print(f'Sleeping for 1 hour in Premarket, time is {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")} NYC ')
                     await asyncio.sleep(60*60)  # sleep for an hour since it's probably Before 4:XX AM 
             else:
-                print(f'Weekend, Sleeping for 48 hours starting {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
+                print(f'Weekend, Sleeping for 48 hours starting {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")} NYC ')
                 await asyncio.sleep(60*60*48)
                 previously_notified_or_discarded= dict()  #  the previously notified set gets reset after close, it gets updated with the blocked set on every iteration in the upper logic
 
@@ -160,7 +162,7 @@ async def bot_start():
 
 
 
-def premarket_gainers(lower_price_limit=1,upper_price_limit=30): # we filter out tickers than are pennies ( Sub 1 dollar) and mid-large caps ( over 30 dollar which is already high )
+def premarket_gainers(lower_price_limit=gainers_lower_limit,upper_price_limit=gainers_upper_limit): # we filter out tickers than are pennies ( Sub 1 dollar) and mid-large caps ( over 30 dollar which is already high )
     url = "https://quotes-gw.webullfintech.com/api/bgw/market/topGainers?regionId=6&pageIndex=1&pageSize=150" # the number of tickers is at the end 
     headers = {
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36', }
