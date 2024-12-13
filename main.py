@@ -102,7 +102,7 @@ async def on_ready():
                     print(f'Sleeping for 10 mins starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                     await asyncio.sleep(60*10)  # every 10  mins
                 elif nyc_time >= nyc_close_time: # we reset the notified ticker after close
-                    seconds_until_4AM = (60*60*7 + ( (59 - datetime.datetime.now().time().minute) * 60 )+ (60 - datetime.datetime.now().time().second ))
+                    seconds_until_4AM = (60*60*7 + ( (60 - datetime.datetime.now().time().minute) * 60 )+ (60 - datetime.datetime.now().time().second ))
                     print(f'After hours limit, Sleeping for  {str(datetime.timedelta(seconds=seconds_until_4AM))} starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}PM NYC ')
                     #print(f'The Blocked_set is {blocked_dict}, assigned to previously_notified_set') # just to have it visually visible/debug 
                     currently_running = set()
