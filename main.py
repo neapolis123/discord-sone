@@ -62,7 +62,7 @@ async def on_ready():
             nyc_date = datetime.datetime.now(tz=ZoneInfo('America/New_York'))
             nyc_time = nyc_date.time()
             today = nyc_date.weekday()
-            if  0 <= today <= 4:  # if weekend just sleep 
+            if  0 <= today <= 4:  # if weekend just sleep for 48 hours
                 if start <= nyc_time <= nyc_close_time: # If between 4am and 8pm inclusive
                     iteration += 1
                     print(iteration)
@@ -261,7 +261,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
                     eliminating_text = ['will not receive any proceeds','will not receive any of the proceeds']
                     if 'This page is temporarily unavailable' in filling_text: # checks if the SEC server is down, happenes from time time, in this case we basically reject the ticker so we don't notify every ticker that has S-1
                         print(f"SEC site is down when trying to retreive ticker {ticker_dict['ticker']} with url: {filling_link}")
-                        return
+                        continue # try with next filling
                     if all(el not in filling_text for el in eliminating_text) : #longer version :'will not receive any proceeds' not in filling_text and 'will not receive any of the proceeds' not in filling_text: # this checks if the S-1/F-1 filling is NOT a shareholders selling filling by checking for the eliminating text
                         if 'SUBJECT TO COMPLETION' not in filling_text.upper(): # sometimes an annex without the WILL NOT RECEIVE ANY PROCEEDS is filled and its detected as a good filling althought its belongs to a shareholder resale, to make sure we eliminate those we check for string 'SUBJECT TO COMPLETION' , example https://www.sec.gov/Archives/edgar/data/1874252/000121390024107013/ea0224137-f1a2_mainz.htm
                             print(f'Annex found with url {filling_link}, filling ignored') # for debugging purposes 
