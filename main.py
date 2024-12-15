@@ -262,7 +262,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
                     if 'This page is temporarily unavailable' in filling_text: # checks if the SEC server is down, happenes from time time, in this case we basically reject the ticker so we don't notify every ticker that has S-1
                         print(f"SEC site is down when trying to retreive ticker {ticker_dict['ticker']} with url: {filling_link}")
                         return
-                    if all(el not in filling_text for el in eliminating_text) : #longer version :'will not receive any proceeds' not in filling_text and 'will not receive any of the proceeds' not in filling_text: # this checks if the S-1/F-1 filling is NOT a shareholders selling filling but checking for the eliminating text
+                    if all(el not in filling_text for el in eliminating_text) and 'SUBJECT TO COMPLETION' in filling_text.upper() : #longer version :'will not receive any proceeds' not in filling_text and 'will not receive any of the proceeds' not in filling_text: # this checks if the S-1/F-1 filling is NOT a shareholders selling filling but checking for the eliminating text
                         print(f'good filling found on {ticker_dict["ticker"]}') 
                         email_hyperlink = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker_dict["CIK"]}&owner=exclude&count=200'
                         return  {ticker_dict['ticker']: {'link':email_hyperlink,'price':ticker_dict['price'],'latest_filling_date':latest_filling_date,'gain':ticker_dict['gain']}} # we break here as soon as we find a good one 
