@@ -110,10 +110,15 @@ async def on_ready():
                 elif nyc_time <=start:
                     print(f'Sleeping for 1 hour in Premarket, time is {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                     await asyncio.sleep(60*60)  # sleep for an hour since it's probably Before 4:XX AM 
-            else:
-                print(f'Weekend, Sleeping for 48 hours starting {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")} ')
-                await asyncio.sleep(60*60*48)
-                previously_notified_or_discarded= dict()  #  the previously notified set gets reset after close, it gets updated with the blocked set on every iteration in the upper logic
+            else: # its the weekend
+                 now  = datetime.datetime.now(tz=ZoneInfo("America/New_York"))
+                 extraday = 60*60*24  if today==4 else 0 #if saturday we add an extra 24 hours otherwise nothing 
+                 next_midnight = (now + datetime.timedelta(days=1)).replace(hour=0,minute=0,second=0,microsecond=0) # since midnight is the next day, we add 1 day to the current time and then roll back to 0 all the hours minutes seconds and micro to get midnight. this will be midnight 
+                 seconds_until_midnight = (next_midnight - now).seconds # the number of seconds from now to midnight 
+                 seconds_until_Monday_4am = ( seconds_until_midnight + extraday + 60*60*4 + 60  ) # here we wait until midnight, then we add 24 hours if we are in saturday to sleep through sunday, then sleep 4 hours until 4am plus 60 seconds i.e 1 minute to avoid getting false gainers at exactly 4 am from webull
+                 previously_notified_or_discarded= dict()  #  the previously notified set gets reset after close, it gets updated with the blocked set on every iteration in the upper logic
+                 print(f'Weekend, Sleeping for {str(datetime.timedelta(seconds=seconds_until_Monday_4am))} starting {now.strftime("%H:%M:%S")} NYC time ')
+                 await asyncio.sleep(seconds_until_Monday_4am)
 
         except Exception:
             await me.send('Problem encountered in outside the fetch logic: \n' + '```' + traceback.format_exc()[-1700:] + '```' +'\n\nSleeping for 10 mins after failed fetched attempt at ' + datetime.datetime.now(tz=ZoneInfo('America/New_York')).strftime("%H:%M:%S"))
