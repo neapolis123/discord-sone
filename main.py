@@ -251,7 +251,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
         # Here we filter for shareholder resale fillings and discard them,and if it's a good filling we forward it to be notified 
 
         async with aiohttp.ClientSession(headers=headers) as s: # means we got a newer filling for a notified or a discarded ticker or simply first time check for something that has non IPO fillings, we check if they are good or not inside 
-            for form in forms: # if forms are returns we check if they match F-1/X or S-1/X,
+            for form in forms: # if forms are returned we check if they match F-1/X or S-1/X,
                     id = form['_id'].split(':')  # form ['id] = "_id": "0001370053-24-000056:anab-formsx3_atm2024.htm" , we split it on the ':' which will be replace with a '/' later
                     filing_number = id[0].replace('-', '')  # we replace the dashes '-' with empty spaces to construct the filling link
                     filling_link = f'https://www.sec.gov/Archives/edgar/data/{int(ticker_dict["CIK"])}/{filing_number}/{id[1]}'
@@ -262,7 +262,10 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
                     if 'This page is temporarily unavailable' in filling_text: # checks if the SEC server is down, happenes from time time, in this case we basically reject the ticker so we don't notify every ticker that has S-1
                         print(f"SEC site is down when trying to retreive ticker {ticker_dict['ticker']} with url: {filling_link}")
                         return
-                    if all(el not in filling_text for el in eliminating_text) and 'SUBJECT TO COMPLETION' in filling_text.upper() : #longer version :'will not receive any proceeds' not in filling_text and 'will not receive any of the proceeds' not in filling_text: # this checks if the S-1/F-1 filling is NOT a shareholders selling filling but checking for the eliminating text
+                    if all(el not in filling_text for el in eliminating_text) : #longer version :'will not receive any proceeds' not in filling_text and 'will not receive any of the proceeds' not in filling_text: # this checks if the S-1/F-1 filling is NOT a shareholders selling filling but checking for the eliminating text
+                        if 'SUBJECT TO COMPLETION' not in filling_text.upper(): # sometimes an annex without the WILL NOT RECEIVE ANY PROCEEDS is filled and its detected as a good filling, make sure we eliminate those we check for string 'SUBJECT TO COMPLETION' , example https://www.sec.gov/Archives/edgar/data/1874252/000121390024107013/ea0224137-f1a2_mainz.htm
+                            print(f'Annex found with url {filling_link}, filling ignored') # for debugging purposes 
+                            continue # we jump to the next filling  
                         print(f'good filling found on {ticker_dict["ticker"]}') 
                         email_hyperlink = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker_dict["CIK"]}&owner=exclude&count=200'
                         return  {ticker_dict['ticker']: {'link':email_hyperlink,'price':ticker_dict['price'],'latest_filling_date':latest_filling_date,'gain':ticker_dict['gain']}} # we break here as soon as we find a good one 
