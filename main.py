@@ -264,7 +264,8 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
                     filling_link = f'https://www.sec.gov/Archives/edgar/data/{int(ticker_dict["CIK"])}/{filing_number}/{id[1]}'
                     print(filling_link)
                     filling = await s.get(filling_link,ssl=False)
-                    filling_text = await filling.text()
+                    filling_text_raw = await filling.text()
+                    filling_text = filling_text_raw.replace('&nbsp;',' ')
                     eliminating_text = ['will not receive any proceeds','will not receive any of the proceeds']
                     if 'This page is temporarily unavailable' in filling_text: # checks if the SEC server is down, happenes from time time, in this case we basically reject the ticker so we don't notify every ticker that has S-1
                         print(f"SEC site is down when trying to retreive ticker {ticker_dict['ticker']} with url: {filling_link}")
