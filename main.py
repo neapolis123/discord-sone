@@ -107,9 +107,11 @@ async def on_ready():
                     #print(f'The Blocked_set is {blocked_dict}, assigned to previously_notified_set') # just to have it visually visible/debug 
                     currently_running = set()
                     await asyncio.sleep(seconds_until_4AM) # sleep just enough to start again at 4AM exactly, we do this by waiting until the hour is ended after the market is closed that is until 21H and then we wait 8 hours from there , we calculate this by taking current minutes and subsracting them from 60 minutes and then multiply by 60 to get how many seconds until the next hours starts
-                elif nyc_time <=start:
-                    print(f'Sleeping for 1 hour in Premarket, time is {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
-                    await asyncio.sleep(60*60)  # sleep for an hour since it's probably Before 4:XX AM 
+                elif nyc_time <= start:
+                    current_time_in_seconds = (nyc_time.hour *3600 ) + (nyc_time.minute *60) + nyc_time.second # we convert the time to seconds 
+                    seconds_to_4AM = (4*3600) - current_time_in_seconds # we then calculate the difference until 4 AM after changing it to seconds since 3600 seconds per hour so 4 * 3600
+                    print(f'Sleeping for {seconds_to_4AM} seconds in Premarket, time is {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
+                    await asyncio.sleep(seconds_to_4AM)  # sleep for an hour since it's probably Before 4:XX AM 
             else: # its the weekend
                  now  = datetime.datetime.now(tz=ZoneInfo("America/New_York"))
                  extraday = 60*60*24  if today==4 else 0 #if saturday we add an extra 24 hours otherwise nothing 
@@ -268,7 +270,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
                         print(f"SEC site is down when trying to retreive ticker {ticker_dict['ticker']} with url: {filling_link}")
                         continue # try with next filling
                     if all(el not in filling_text for el in eliminating_text) : #longer version :'will not receive any proceeds' not in filling_text and 'will not receive any of the proceeds' not in filling_text: # this checks if the S-1/F-1 filling is NOT a shareholders selling filling by checking for the eliminating text
-                        if 'SUBJECT\nTO COMPLETION' not in filling_text.upper(): # sometimes an annex without the WILL NOT RECEIVE ANY PROCEEDS is filled and its detected as a good filling althought its belongs to a shareholder resale, to make sure we eliminate those we check for string 'SUBJECT TO COMPLETION' , example https://www.sec.gov/Archives/edgar/data/1874252/000121390024107013/ea0224137-f1a2_mainz.htm
+                        if all(x not in filling_text.upper() for x in ['SUBJECT\nTO COMPLETION','SUBJECT TO COMPLETION']): # sometimes an annex without the WILL NOT RECEIVE ANY PROCEEDS is filled and its detected as a good filling althought its belongs to a shareholder resale, to make sure we eliminate those we check for string 'SUBJECT TO COMPLETION' , example https://www.sec.gov/Archives/edgar/data/1874252/000121390024107013/ea0224137-f1a2_mainz.htm
                             print(f'Annex found with url {filling_link}, filling ignored') # for debugging purposes 
                             continue # we jump to the next filling  
                         print(f'good filling found on {ticker_dict["ticker"]}') 
