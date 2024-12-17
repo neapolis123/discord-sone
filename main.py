@@ -252,11 +252,13 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
                     return  # it is not running and no newer fillings, discard
                         # indirectly , if a ticker is not running and has newer filling they are not discard and jump to the async block to be processed for selling shareholder 
             else:  # a ticker that is currently running AND previously notified 
-                if ticker_dict['ticker'] in currently_running and latest_filling_date == notified_or_discarded[ticker_dict['ticker']] : # have we notified that this ticker is running and if even if yes, we check if it has a newer filling since last time, if yes we don't discard it and let the logic update it 
-                    return # it has been notified that is running and doesnt have a newer filling, we discard
-
+                if  latest_filling_date == notified_or_discarded[ticker_dict['ticker']] : # have we notified that this ticker is running and if even if yes, we check if it has a newer filling since last time, if yes we don't discard it and let the logic update it 
+                    if ticker_dict['ticker'] in currently_running :
+                        return # it has been notified or is a shareholder running ticker that is running and doesnt have a newer filling, we discard
+                    else:
+                        currently_running.add(ticker_dict['ticker']) # this makes sure if a shareholder ticker is running we don't keep checking each time for the same fillings and in the next iteration we filter it out if it doesn't have a newer filling
         # Here we filter for shareholder resale fillings and discard them,and if it's a good filling we forward it to be notified 
-
+        
         async with aiohttp.ClientSession(headers=headers) as s: # means we got a newer filling for a notified or a discarded ticker or simply first time check for something that has non IPO fillings, we check if they are good or not inside 
             for form in forms: # if forms are returned we check if they match F-1/X or S-1/X,
                     id = form['_id'].split(':')  # form ['id] = "_id": "0001370053-24-000056:anab-formsx3_atm2024.htm" , we split it on the ':' which will be replace with a '/' later
@@ -265,7 +267,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
                     print(filling_link)
                     filling = await s.get(filling_link,ssl=False)
                     filling_text_raw = await filling.text()
-                    filling_text = filling_text_raw.replace('&nbsp;',' ')
+                    filling_text = filling_text_raw.replace('&nbsp;',' ') # to catch example SUBJECT&nbsp;TO&nbsp;COMPLETION ( view-source:https://www.sec.gov/Archives/edgar/data/1874252/000121390024106670/ea0223498-f1a1_mainz.htm) 
                     eliminating_text = ['will not receive any proceeds','will not receive any of the proceeds']
                     if 'This page is temporarily unavailable' in filling_text: # checks if the SEC server is down, happenes from time time, in this case we basically reject the ticker so we don't notify every ticker that has S-1
                         print(f"SEC site is down when trying to retreive ticker {ticker_dict['ticker']} with url: {filling_link}")
