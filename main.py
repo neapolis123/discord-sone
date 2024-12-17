@@ -257,7 +257,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
                         return # it has been notified or is a shareholder running ticker that is running and doesnt have a newer filling, we discard
                     else:
                         currently_running.add(ticker_dict['ticker']) # this makes sure if a shareholder ticker is running we don't keep checking each time for the same fillings and in the next iteration we filter it out if it doesn't have a newer filling
-                        print(f'added ticker {ticker_dict['ticker']} to the running set')
+                        print(f'added ticker {ticker_dict["ticker"]} to the running set')
         # Here we filter for shareholder resale fillings and discard them,and if it's a good filling we forward it to be notified 
         
         async with aiohttp.ClientSession(headers=headers) as s: # means we got a newer filling for a notified or a discarded ticker or simply first time check for something that has non IPO fillings, we check if they are good or not inside 
