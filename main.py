@@ -90,7 +90,7 @@ async def on_ready():
                                 #        await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Is currently running + filling today')
                                 #    else :
                                 #        await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Is currently running with a filling')
-                                    #currently_running.add(ticker) # to avoid to be notified on every iteration, will be used in get_filling() to filter out previously notified tickers 
+                                    currently_running.add(ticker) # to avoid to be notified on every iteration, will be used in get_filling() to filter out previously notified tickers 
                                     print(f'the currently running set is : {currently_running}')
                             elif info['latest_filling_date'] == str(datetime.datetime.today().date()): # this checks if it has a filling today, quality of life to avoid opening everyday when something is relevant over multiple days but awaiting an amendment
                                await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Has a filling today') 
