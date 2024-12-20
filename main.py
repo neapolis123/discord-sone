@@ -45,7 +45,7 @@ currently_running = set() # if something has been notified previously but is cur
 running_threshold = 30 #% the percentage over which something is considered running
 gainers_upper_limit = 20  #$ we filter out tickers above 30 dollars 
 gainers_lower_limit = 1 # we filter out penny tickers
-errors = list() # when there is an error fetching we save the timestamp here 
+errors = set() # when there is an error fetching we save the timestamp here 
 
 @bot.event
 async def on_ready():
@@ -225,7 +225,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
         print(f"acccess was denied for ticker {ticker_dict['ticker']} with url: {url} , was skipped") # we print in the console but since we don't check the console all the time
         error_time = datetime.datetime.now(ZoneInfo('Africa/Tunis')) # we snapshot the timestamp
         formated_error_timestamp_tunis_time = str(error_time.date()) + ' ' + str(error_time.strftime("%H:%M")) # format it to be easily readable
-        errors.append(formated_error_timestamp_tunis_time) # then save it in a set to be consulted on demand 
+        errors.add(formated_error_timestamp_tunis_time) # then save it in a set to be consulted on demand 
         print(f'error timestamp {formated_error_timestamp_tunis_time} added ') # we print for debugging
         return
     api_response = await response.json() # an example at https://efts.sec.gov/LATEST/search-index?q=S-1&category=form-cat0&ciks=0001956955&entityName=Unusual%20Machines%2C%20Inc.%20%20(CIK%200001956955)&forms=-3%2C-4%2C-5&startdt=2019-11-29&enddt=2024-11-29
