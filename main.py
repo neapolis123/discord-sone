@@ -46,6 +46,8 @@ running_threshold = 30 #% the percentage over which something is considered runn
 gainers_upper_limit = 20  #$ we filter out tickers above 30 dollars 
 gainers_lower_limit = 1 # we filter out penny tickers
 errors = dict() # when there is an error fetching we save the timestamp here 
+sleeping_step = 5 # how long the bot sleeps before the next check 
+
 
 @bot.event
 async def on_ready():
@@ -100,8 +102,8 @@ async def on_ready():
                             previously_notified_or_discarded.update({ticker:info['latest_filling_date']})  # we add the notified tickers to the set to avoid duplicate notifications next iterations , we use update after union since union gives a new copy and update modifies the existing set
                         print('Done sending messages')
                     print(f'New set of notified/discarded set is {previously_notified_or_discarded}') # we print it here and not inside the previous if to debugg and check that it was cleared after close ( so that each day starts with a an empty set and doesnt carry the notified tickers from yest )
-                    print(f'Sleeping for 5 mins starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
-                    await asyncio.sleep(60*5)  # every 5  mins
+                    print(f'Sleeping for {sleeping_step} mins starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
+                    await asyncio.sleep(60*sleeping_step)  # every X mins
                 elif nyc_time >= nyc_close_time: # we reset the notified ticker after close
                     seconds_until_4AM = (60*60*7 + ( (60 - datetime.datetime.now().time().minute) * 60 )+ (60 - datetime.datetime.now().time().second ))
                     print(f'After hours limit, Sleeping for  {str(datetime.timedelta(seconds=seconds_until_4AM))} starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}PM NYC ')
@@ -272,7 +274,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
                     filling = await s.get(filling_link,ssl=False)
                     filling_text = await filling.text()
                     #filling_text = filling_text_raw.replace('&nbsp;',' ') # to catch example SUBJECT&nbsp;TO&nbsp;COMPLETION ( view-source:https://www.sec.gov/Archives/edgar/data/1874252/000121390024106670/ea0223498-f1a1_mainz.htm) 
-                    eliminating_text = ['will not receive any proceeds','will not receive any of the proceeds']
+                    eliminating_text = ['will not receive any proceeds from the sale', 'will not receive any proceeds from the resale','will not receive any of the proceeds from the sale','will not receive any of the proceeds from the resale']
                     if 'This page is temporarily unavailable' in filling_text: # checks if the SEC server is down, happenes from time time, in this case we basically reject the ticker so we don't notify every ticker that has S-1
                         print(f"SEC site is down when trying to retreive ticker {ticker_dict['ticker']} with url: {filling_link}")
                         continue # try with next filling
