@@ -39,6 +39,20 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix='/',intents=intents)
 
+holiday_closed_list_2025 = [
+    '2024-12-25',
+    '2025-01-01',
+    '2025-01-20',
+    '2025-02-17',
+    '2025-04-18',
+    '2025-05-26',
+    '2025-06-19',
+    '2025-07-04',
+    '2025-09-01',
+    '2025-11-27',
+    '2025-12-25'
+]
+
 blocked_dict = dict() # will be of the format {'AMIX':'2024-03-13','BLOCKED':'BLOCKED'}
 number_of_days_for_fillings = 30 # 
 currently_running = set() # if something has been notified previously but is currently running we put it here so that we only notified once more 
@@ -47,6 +61,7 @@ gainers_upper_limit = 20  #$ we filter out tickers above 30 dollars
 gainers_lower_limit = 1 # we filter out penny tickers
 errors = dict() # when there is an error fetching we save the timestamp here 
 sleeping_step = 5 # how long the bot sleeps before the next check 
+
 
 
 
@@ -65,6 +80,8 @@ async def on_ready():
             nyc_date = datetime.datetime.now(tz=ZoneInfo('America/New_York'))
             nyc_time = nyc_date.time()
             today = nyc_date.weekday()
+            if str(nyc_date.date()) in holiday_closed_list_2025: 
+                print(f'its a holiday, sleeping for 24 hours starting {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
             if  0 <= today <= 4:  # if weekend just sleep for 48 hours
                 if start <= nyc_time <= nyc_close_time: # If between 4am and 8pm inclusive
                     iteration += 1
