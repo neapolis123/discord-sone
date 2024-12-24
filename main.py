@@ -73,7 +73,9 @@ async def on_ready():
                     previously_notified_or_discarded.update(blocked_dict) #adds the new blocked dict to the current discarded/notifie, we do it here , might be inefficient but this way the blocked tickers are added one iteration later intead of one day later at close
                     try:  #the previously_notified dict here is updated inside play to add IPOs and Reselling Shareholders S-1s, its shared between the inner logic and this outer logic , it is reset at the end of every day
                       #the core of our logic is done inside this function
-                      dict_worth_watching = await logic(previously_notified_or_discarded)  # one dict with all tickers as keys {'UAVS': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40',price:5,latest_filling_date:2024-02-10},'QUBT': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40',price:10,latest_filling_date:2024-02-10} }
+                            tickers_without_cik = premarket_gainers()
+                            tickers_with_cik = await add_CIKs(tickers_without_cik)
+                            dict_worth_watching = await get_all_fillings(tickers_with_cik,previously_notified_or_discarded)  # one dict with all tickers as keys {'UAVS': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40',price:5,latest_filling_date:2024-02-10},'QUBT': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40',price:10,latest_filling_date:2024-02-10} }
                     except Exception: # this dict has all the tickers that have fillings in the last 30days that include S-1 and F-1, if we reached this point, it means that these tickers will be notified because they were filtered as not preivously notified/discard in 'get_fillings' and if a a ticker has a filling but it's a seller shareholder one it will be added to the discarded without making it to this step
                       #await me.send(f'A problem has been encountered in fetching logic: \n```{traceback.format_exc()[-1700:]}``` \nSleeping for 30 mins after failed fetched attempt at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                       print(f'A problem has been encountered in fetching logic: \n```{traceback.format_exc()[:2000]}``` \nSleeping for 30 mins after failed fetched attempt at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
@@ -310,11 +312,11 @@ async def add_CIKs(tickers):  # This takes the dictionary and adds the CIKs to i
         return tickers
 
 
-async def logic(notified_or_discarded): # only get all fillings updates the notified_or_discarded dict
+'''async def logic(notified_or_discarded): # only get all fillings updates the notified_or_discarded dict
     tickers_without_cik = premarket_gainers()
     tickers_with_cik = await add_CIKs(tickers_without_cik)
     worth_watching_list = await get_all_fillings(tickers_with_cik,notified_or_discarded)
-    return  worth_watching_list
+    return  worth_watching_list'''
 
 
 async def bot_start():
