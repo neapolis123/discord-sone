@@ -49,11 +49,6 @@ errors = dict() # when there is an error fetching we save the timestamp here
 sleeping_step = 5 # how long the bot sleeps before the next check 
 
 
-async def logic(notified_or_discarded): # only get all fillings updates the notified_or_discarded dict
-    tickers_without_cik = premarket_gainers()
-    tickers_with_cik = await add_CIKs(tickers_without_cik)
-    worth_watching_list = await get_all_fillings(tickers_with_cik,notified_or_discarded)
-    return  worth_watching_list
 
 @bot.event
 async def on_ready():
@@ -315,6 +310,11 @@ async def add_CIKs(tickers):  # This takes the dictionary and adds the CIKs to i
         return tickers
 
 
+async def logic(notified_or_discarded): # only get all fillings updates the notified_or_discarded dict
+    tickers_without_cik = premarket_gainers()
+    tickers_with_cik = await add_CIKs(tickers_without_cik)
+    worth_watching_list = await get_all_fillings(tickers_with_cik,notified_or_discarded)
+    return  worth_watching_list
 
 
 async def bot_start():
