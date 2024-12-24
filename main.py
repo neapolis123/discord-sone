@@ -49,6 +49,12 @@ errors = dict() # when there is an error fetching we save the timestamp here
 sleeping_step = 5 # how long the bot sleeps before the next check 
 
 
+async def logic(notified_or_discarded): # only get all fillings updates the notified_or_discarded dict
+    tickers_without_cik = premarket_gainers()
+    tickers_with_cik = await add_CIKs(tickers_without_cik)
+    worth_watching_list = await get_all_fillings(tickers_with_cik,notified_or_discarded)
+    return  worth_watching_list
+
 @bot.event
 async def on_ready():
     #channel = bot.get_channel(1306738767280738354) good to keep if i decide to change from DMS to channels posting
@@ -71,7 +77,8 @@ async def on_ready():
                     dict_worth_watching = {}
                     previously_notified_or_discarded.update(blocked_dict) #adds the new blocked dict to the current discarded/notifie, we do it here , might be inefficient but this way the blocked tickers are added one iteration later intead of one day later at close
                     try:  #the previously_notified dict here is updated inside play to add IPOs and Reselling Shareholders S-1s, its shared between the inner logic and this outer logic , it is reset at the end of every day
-                      dict_worth_watching = await play(previously_notified_or_discarded)  # one dict with all tickers as keys {'UAVS': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40',price:5,latest_filling_date:2024-02-10},'QUBT': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40',price:10,latest_filling_date:2024-02-10} }
+                      #the core of our logic is done inside this function
+                      dict_worth_watching = await logic(previously_notified_or_discarded)  # one dict with all tickers as keys {'UAVS': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40',price:5,latest_filling_date:2024-02-10},'QUBT': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40',price:10,latest_filling_date:2024-02-10} }
                     except Exception: # this dict has all the tickers that have fillings in the last 30days that include S-1 and F-1, if we reached this point, it means that these tickers will be notified because they were filtered as not preivously notified/discard in 'get_fillings' and if a a ticker has a filling but it's a seller shareholder one it will be added to the discarded without making it to this step
                       #await me.send(f'A problem has been encountered in fetching logic: \n```{traceback.format_exc()[-1700:]}``` \nSleeping for 30 mins after failed fetched attempt at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                       print(f'A problem has been encountered in fetching logic: \n```{traceback.format_exc()[:2000]}``` \nSleeping for 30 mins after failed fetched attempt at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
@@ -129,88 +136,6 @@ async def on_ready():
             await me.send('Problem encountered in outside the fetch logic: \n' + '```' + traceback.format_exc()[-1700:] + '```' +'\n\nSleeping for 10 mins after failed fetched attempt at ' + datetime.datetime.now(tz=ZoneInfo('America/New_York')).strftime("%H:%M:%S"))
             print('Problem encountered in outside the fetch logic, Sleeping for 30min')
             await asyncio.sleep(60 * 30)
-
-
-
-@bot.event
-async def on_message(ctx):
-    global blocked_dict
-    #if ctx.channel.type == 'private' : # gives 'private' if DM or 'text' if its a public text channel but it doesnt work cause it's not a string so we try the next IF, this is only here to show the logical steps 
-    #    print(ctx.content)
-    #    await ctx.channel.send(f'Done blocked {ctx.cotent}')
-    if isinstance(ctx.channel, discord.channel.DMChannel) and ctx.author != bot.user and ctx.type != discord.MessageType.pins_add and ctx.type != discord.MessageType.reply  : # prevents the bot from going into an endless loop and check that it isnt a system message after we pin a message and also not a reply to a good filling that we want to add info 
-        command = ctx.content
-        parameter = command.split(' ')
-        if len(parameter) == 1:  #one word DM 'LIST','CLEAR' or AAPL ( just ticker symbol to add) 
-            if command == 'LIST':
-                await ctx.channel.send(blocked_dict)
-            elif command == 'CLEAR':             
-                blocked_dict= set()                          # worth noting that all modifications to the blocked set are only applied the next day
-                await ctx.channel.send('Cleared the set')
-            elif command == 'ERRORS':
-                if len(errors) :
-                    await ctx.channel.send(f'{errors}')
-                else:   
-                    await ctx.channel.send(f'No Errors')
-            else: # only the TICKER is typed
-                blocked_dict.update({command.upper():'Blocked'})
-                await ctx.channel.send(f'Added [{command.upper()}] to the set')
-        else:    # this means we have multiple parameters either REMOVE APPL 
-            if parameter[0] == 'REMOVE':
-                del blocked_dict[parameter[1].upper()]
-                await ctx.channel.send(f'Deleted [{parameter[1].upper()}] from the set')
-            else: # or just a list of tickers to add one after the others APPL NFLX MOXL UMAC
-                for i in parameter:
-                    blocked_dict.update({i.upper():'Blocked'}) 
-                await ctx.channel.send(f'Added {parameter} to the set')
-        
-   
-
-
-async def bot_start():
-     await bot.start(os.getenv('TOKEN',None))
-
-
-
-def premarket_gainers(lower_price_limit=gainers_lower_limit,upper_price_limit=gainers_upper_limit): # we filter out tickers than are pennies ( Sub 1 dollar) and mid-large caps ( over 30 dollar which is already high )
-    url = "https://quotes-gw.webullfintech.com/api/bgw/market/topGainers?regionId=6&pageIndex=1&pageSize=150" # the number of tickers is at the end 
-    headers = {
-        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36', }
-    response = requests.get(url, headers=headers)  # single call so its okay to make in synchronously
-    data = response.json()
-    tickers = list()
-    for ticker in data['data']:
-        info = ticker['ticker']
-        lean_ticker = info['symbol']
-        if ' ' in lean_ticker:  # sometimes a symbol like GTN-A is writen by the API as GTN A, so we eliminite all weird looking symbols
-            continue
-        gain = int(float(info['changeRatio']) * 100)
-        price = int(float(ticker['values']['price'])) # will be rounded down, 1.4 will be 1 and 2.6 will be 2 as an int
-        if (price > lower_price_limit and price < upper_price_limit): # excluse to make sure tickers with 1.X format dont get detected, to be determined if this good or not
-            tickers.append({'ticker': lean_ticker, 'price': price, 'gain': gain})
-    #pprint.pprint(tickers)
-    return tickers
-
-
-async def fetch_CIK(ticker_dict, session):  # we hit our own API to get the CIK then we added it to the dic;
-    response = await session.get(f'https://sec.visas.tn/{ticker_dict["ticker"]}',ssl=False)  # {'ticker':'APPL',price:X,gain:Y,CIK:0123231} } we get key AAPL as k and the dict {price:X,gain:Y} as parameter ticker_dict
-    response.raise_for_status()
-    api_response = await response.json()
-    ticker_dict['CIK'] = api_response['CIK'] # can be None found but that's okay
-    return
-
-
-async def add_CIKs(tickers):  # This takes the dictionary and adds the CIKs to it that we will use to get the fillings from the SEC API in the next step
-    tasks = []  # tickers has the format [ {'ticker:'ACIU','gain': 19, 'price': 3},{'ticker':'ADGM','gain': 34, 'price': 3} ]
-    conn = aiohttp.TCPConnector(limit_per_host=5,limit=30)
-    async with aiohttp.ClientSession(connector=conn) as session:  # we keep the same session for all the requests and pass it on to the individual calls
-        for ticker_dict in tickers:  #
-            tasks.append(fetch_CIK(ticker_dict, session))  # assembles all the tasks and then triggers them with asyncio.gather
-        start = t.time()
-        results = await asyncio.gather(*tasks)
-        print(f'Time to get all the CIKs {t.time() - start } s')
-        pprint.pprint(tickers)
-        return tickers
 
 
 async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=number_of_days_for_fillings):  # we hit the SEC API to get the fillings from 30 days that has EFFECT or S-1
@@ -315,13 +240,85 @@ async def get_all_fillings(tickers,notified_or_discarded): # tickers is a list o
         #pprint.pprint(list_worth_watching)
         return list_worth_watching
 
+@bot.event
+async def on_message(ctx):
+    global blocked_dict
+    #if ctx.channel.type == 'private' : # gives 'private' if DM or 'text' if its a public text channel but it doesnt work cause it's not a string so we try the next IF, this is only here to show the logical steps 
+    #    print(ctx.content)
+    #    await ctx.channel.send(f'Done blocked {ctx.cotent}')
+    if isinstance(ctx.channel, discord.channel.DMChannel) and ctx.author != bot.user and ctx.type != discord.MessageType.pins_add and ctx.type != discord.MessageType.reply  : # prevents the bot from going into an endless loop and check that it isnt a system message after we pin a message and also not a reply to a good filling that we want to add info 
+        command = ctx.content
+        parameter = command.split(' ')
+        if len(parameter) == 1:  #one word DM 'LIST','CLEAR' or AAPL ( just ticker symbol to add) 
+            if command == 'LIST':
+                await ctx.channel.send(blocked_dict)
+            elif command == 'CLEAR':             
+                blocked_dict= set()                          # worth noting that all modifications to the blocked set are only applied the next day
+                await ctx.channel.send('Cleared the set')
+            elif command == 'ERRORS':
+                if len(errors) :
+                    await ctx.channel.send(f'{errors}')
+                else:   
+                    await ctx.channel.send(f'No Errors')
+            else: # only the TICKER is typed
+                blocked_dict.update({command.upper():'Blocked'})
+                await ctx.channel.send(f'Added [{command.upper()}] to the set')
+        else:    # this means we have multiple parameters either REMOVE APPL 
+            if parameter[0] == 'REMOVE':
+                del blocked_dict[parameter[1].upper()]
+                await ctx.channel.send(f'Deleted [{parameter[1].upper()}] from the set')
+            else: # or just a list of tickers to add one after the others APPL NFLX MOXL UMAC
+                for i in parameter:
+                    blocked_dict.update({i.upper():'Blocked'}) 
+                await ctx.channel.send(f'Added {parameter} to the set')
+        
+   
 
-async def play(notified_or_discarded): # only get all fillings updates the notified_or_discarded dict
-    tickers_without_cik = premarket_gainers()
-    tickers_with_cik = await add_CIKs(tickers_without_cik)
-    worth_watching_list = await get_all_fillings(tickers_with_cik,notified_or_discarded)
-    return  worth_watching_list
+def premarket_gainers(lower_price_limit=gainers_lower_limit,upper_price_limit=gainers_upper_limit): # we filter out tickers than are pennies ( Sub 1 dollar) and mid-large caps ( over 30 dollar which is already high )
+    url = "https://quotes-gw.webullfintech.com/api/bgw/market/topGainers?regionId=6&pageIndex=1&pageSize=150" # the number of tickers is at the end 
+    headers = {
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36', }
+    response = requests.get(url, headers=headers)  # single call so its okay to make in synchronously
+    data = response.json()
+    tickers = list()
+    for ticker in data['data']:
+        info = ticker['ticker']
+        lean_ticker = info['symbol']
+        if ' ' in lean_ticker:  # sometimes a symbol like GTN-A is writen by the API as GTN A, so we eliminite all weird looking symbols
+            continue
+        gain = int(float(info['changeRatio']) * 100)
+        price = int(float(ticker['values']['price'])) # will be rounded down, 1.4 will be 1 and 2.6 will be 2 as an int
+        if (price > lower_price_limit and price < upper_price_limit): # excluse to make sure tickers with 1.X format dont get detected, to be determined if this good or not
+            tickers.append({'ticker': lean_ticker, 'price': price, 'gain': gain})
+    #pprint.pprint(tickers)
+    return tickers
 
+
+async def fetch_CIK(ticker_dict, session):  # we hit our own API to get the CIK then we added it to the dic;
+    response = await session.get(f'https://sec.visas.tn/{ticker_dict["ticker"]}',ssl=False)  # {'ticker':'APPL',price:X,gain:Y,CIK:0123231} } we get key AAPL as k and the dict {price:X,gain:Y} as parameter ticker_dict
+    response.raise_for_status()
+    api_response = await response.json()
+    ticker_dict['CIK'] = api_response['CIK'] # can be None found but that's okay
+    return
+
+
+async def add_CIKs(tickers):  # This takes the dictionary and adds the CIKs to it that we will use to get the fillings from the SEC API in the next step
+    tasks = []  # tickers has the format [ {'ticker:'ACIU','gain': 19, 'price': 3},{'ticker':'ADGM','gain': 34, 'price': 3} ]
+    conn = aiohttp.TCPConnector(limit_per_host=5,limit=30)
+    async with aiohttp.ClientSession(connector=conn) as session:  # we keep the same session for all the requests and pass it on to the individual calls
+        for ticker_dict in tickers:  #
+            tasks.append(fetch_CIK(ticker_dict, session))  # assembles all the tasks and then triggers them with asyncio.gather
+        start = t.time()
+        results = await asyncio.gather(*tasks)
+        print(f'Time to get all the CIKs {t.time() - start } s')
+        pprint.pprint(tickers)
+        return tickers
+
+
+
+
+async def bot_start():
+     await bot.start(os.getenv('TOKEN',None))
 
 if __name__ == '__main__':
     asyncio.run(bot_start())
