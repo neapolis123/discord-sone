@@ -82,6 +82,8 @@ async def on_ready():
             today = nyc_date.weekday()
             if str(nyc_date.date()) in holiday_closed_list_2025: 
                 print(f'its a holiday, sleeping for 24 hours starting {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
+                await asyncio.sleep(60*60*24)
+                continue
             if  0 <= today <= 4:  # if weekend just sleep for 48 hours
                 if start <= nyc_time <= nyc_close_time: # If between 4am and 8pm inclusive
                     iteration += 1
