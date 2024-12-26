@@ -60,7 +60,7 @@ running_threshold = 30 #% the percentage over which something is considered runn
 gainers_upper_limit = 20  #$ we filter out tickers above 30 dollars 
 gainers_lower_limit = 1 # we filter out penny tickers
 errors = dict() # when there is an error fetching we save the timestamp here 
-sleeping_step = 2.5 # how long the bot sleeps before the next check 
+sleeping_step = 1 # how long the bot sleeps before the next check 
 
 
 
