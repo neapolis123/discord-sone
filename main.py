@@ -40,7 +40,7 @@ intents.message_content = True
 bot = commands.Bot(command_prefix='/',intents=intents)
 
 holiday_closed_list_2025 = [
-    '2024-12-25',
+    '2024-12-25'
     '2025-01-01',
     '2025-01-20',
     '2025-02-17',
@@ -222,8 +222,8 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
                             print(f'Annex found with url {filling_link}, filling ignored') # for debugging purposes 
                             continue # we jump to the next filling  
                         print(f'good filling found on {ticker_dict["ticker"]}') 
-                        email_hyperlink = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker_dict["CIK"]}&owner=exclude&count=200'
-                        return  {ticker_dict['ticker']: {'link':email_hyperlink,'price':ticker_dict['price'],'latest_filling_date':latest_filling_date,'gain':ticker_dict['gain']}} # we break here as soon as we find a good one 
+                        filling_hyperlink = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker_dict["CIK"]}&owner=exclude&count=200'
+                        return  {ticker_dict['ticker']: {'link':filling_hyperlink,'price':ticker_dict['price'],'latest_filling_date':latest_filling_date,'gain':ticker_dict['gain']}} # we break here as soon as we find a good one 
                     else:
                         print(f'Shareholder Resale filling found on {ticker_dict["ticker"]}, discarded')
             else:   # this else means we went through all the filling of this ticker but all of them were shareholders selling fillings and not interesting ones, we wouldn't make it here if we found a good one since we have a return that will jump over this
