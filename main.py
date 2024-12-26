@@ -315,6 +315,7 @@ async def fetch_CIK(ticker_dict, session):  # we hit our own API to get the CIK 
     response.raise_for_status()
     api_response = await response.json()
     ticker_dict['CIK'] = api_response['CIK'] # can be None found but that's okay
+    ticker_dict['link'] = api_response['link']
     return
 
 
