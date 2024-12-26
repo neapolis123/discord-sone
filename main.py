@@ -328,7 +328,8 @@ async def add_CIKs(tickers):  # This takes the dictionary and adds the CIKs to i
         start = t.time()
         results = await asyncio.gather(*tasks)
         print(f'Time to get all the CIKs {t.time() - start } s')
-        print(tickers)
+        for ticker in tickers:
+            print(ticker)
         return tickers
 
 
