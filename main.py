@@ -97,9 +97,9 @@ async def on_ready():
                         dict_worth_watching = await get_all_fillings(tickers_with_cik,previously_notified_or_discarded)  # one dict with all tickers as keys {'UAVS': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40',price:5,latest_filling_date:2024-02-10},'QUBT': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40',price:10,latest_filling_date:2024-02-10} }
                     except Exception: # this dict has all the tickers that have fillings in the last 30days that include S-1 and F-1, if we reached this point, it means that these tickers will be notified because they were filtered as not preivously notified/discard in 'get_fillings' and if a a ticker has a filling but it's a seller shareholder one it will be added to the discarded without making it to this step
                       #await me.send(f'A problem has been encountered in fetching logic: \n```{traceback.format_exc()[-1700:]}``` \nSleeping for 30 mins after failed fetched attempt at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
-                      print(f'A problem has been encountered in fetching logic: \n```{traceback.format_exc()[:2000]}``` \nSleeping for 30 mins after failed fetched attempt at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
-                      print(f'Problem encountered with the logic \nSleeping for 20 mins after failed fetched attempt at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
-                      await asyncio.sleep(60*20)
+                      print(f'A problem has been encountered in fetching logic: \n```{traceback.format_exc()}``` \nSleeping for 5 mins after failed fetched attempt at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
+                      #print(f'Problem encountered with the logic \nSleeping for 20 mins after failed fetched attempt at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
+                      await asyncio.sleep(60*5)
                       continue
                     print(f'the set to be notified is {set(dict_worth_watching.keys())}') # the set that we got from the logic {'UAVS': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=8504&owner=exclude&count=40',price:5},'QUBT': {link:'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1758009&owner=exclude&count=40',price:10} }
                     #print(f'notified/discarded set is {previously_notified_or_discarded}') # for ease of debugging in the future
@@ -149,9 +149,9 @@ async def on_ready():
                  await asyncio.sleep(seconds_until_Monday_4am)
 
         except Exception:
-            await me.send('Problem encountered in outside the fetch logic: \n' + '```' + traceback.format_exc()[-1700:] + '```' +'\n\nSleeping for 10 mins after failed fetched attempt at ' + datetime.datetime.now(tz=ZoneInfo('America/New_York')).strftime("%H:%M:%S"))
-            print('Problem encountered in outside the fetch logic, Sleeping for 30min')
-            await asyncio.sleep(60 * 30)
+            #await me.send('Problem encountered in outside the fetch logic: \n' + '```' + traceback.format_exc()[-1700:] + '```' +'\n\nSleeping for 5 mins after failed fetched attempt at ' + datetime.datetime.now(tz=ZoneInfo('America/New_York')).strftime("%H:%M:%S"))
+            print('Problem encountered in outside the fetch logic, Sleeping for 5 mins')
+            await asyncio.sleep(60 * 5)
 
 
 async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=number_of_days_for_fillings):  # we hit the SEC API to get the fillings from 30 days that has EFFECT or S-1
@@ -320,17 +320,21 @@ async def fetch_CIK(ticker_dict, session):  # we hit our own API to get the CIK 
 
 
 async def add_CIKs(tickers):  # This takes the dictionary and adds the CIKs to it that we will use to get the fillings from the SEC API in the next step
-    tasks = []  # tickers has the format [ {'ticker:'ACIU','gain': 19, 'price': 3},{'ticker':'ADGM','gain': 34, 'price': 3} ]
-    conn = aiohttp.TCPConnector(limit_per_host=5,limit=30)
-    async with aiohttp.ClientSession(connector=conn) as session:  # we keep the same session for all the requests and pass it on to the individual calls
-        for ticker_dict in tickers:  #
-            tasks.append(fetch_CIK(ticker_dict, session))  # assembles all the tasks and then triggers them with asyncio.gather
-        start = t.time()
-        results = await asyncio.gather(*tasks)
-        print(f'Time to get all the CIKs {t.time() - start } s')
-        for ticker in tickers:
-            print(('['+ticker['ticker']+']').ljust(7), (str(ticker['gain']) + '%').ljust(4),(str(ticker['price'])+'$').ljust(4) , ticker['link'])
-        return tickers
+        tasks = []  # tickers has the format [ {'ticker:'ACIU','gain': 19, 'price': 3},{'ticker':'ADGM','gain': 34, 'price': 3} ]
+        conn = aiohttp.TCPConnector(limit_per_host=5,limit=30)
+        async with aiohttp.ClientSession(connector=conn) as session:  # we keep the same session for all the requests and pass it on to the individual calls
+            for ticker_dict in tickers:  #
+                try:
+                    tasks.append(fetch_CIK(ticker_dict, session))  # assembles all the tasks and then triggers them with asyncio.gather
+                except Exception:
+                    print(f'problem fetching CIK for ticker {ticker}')
+                    continue
+            start = t.time()
+            results = await asyncio.gather(*tasks)
+            print(f'Time to get all the CIKs {t.time() - start } s')
+            for ticker in tickers:
+                print(('['+ticker['ticker']+']').ljust(7), (str(ticker['gain']) + '%').ljust(4),(str(ticker['price'])+'$').ljust(4) , ticker['link'])
+            return tickers
 
 
 '''async def logic(notified_or_discarded): # only get all fillings updates the notified_or_discarded dict
