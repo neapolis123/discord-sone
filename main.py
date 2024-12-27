@@ -315,7 +315,7 @@ async def fetch_CIK(ticker_dict, session):  # we hit our own API to get the CIK 
     response.raise_for_status()
     api_response = await response.json()
     ticker_dict['CIK'] = api_response['CIK'] # can be None found but that's okay
-    ticker_dict['link'] = api_response['link']
+    ticker_dict['link'] = api_response.get('link')
     return
 
 
@@ -324,11 +324,7 @@ async def add_CIKs(tickers):  # This takes the dictionary and adds the CIKs to i
         conn = aiohttp.TCPConnector(limit_per_host=5,limit=30)
         async with aiohttp.ClientSession(connector=conn) as session:  # we keep the same session for all the requests and pass it on to the individual calls
             for ticker_dict in tickers:  #
-                try:
-                    tasks.append(fetch_CIK(ticker_dict, session))  # assembles all the tasks and then triggers them with asyncio.gather
-                except Exception:
-                    print(f'problem fetching CIK for ticker {ticker}')
-                    continue
+                tasks.append(fetch_CIK(ticker_dict, session))  # assembles all the tasks and then triggers them with asyncio.gather
             start = t.time()
             results = await asyncio.gather(*tasks)
             print(f'Time to get all the CIKs {t.time() - start } s')
