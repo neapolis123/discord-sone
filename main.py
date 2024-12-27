@@ -53,15 +53,15 @@ holiday_closed_list_2025 = [
     '2025-12-25'
 ]
 
-blocked_dict = dict() # will be of the format {'AMIX':'2024-03-13','BLOCKED':'BLOCKED'}
-
-number_of_gainers = 150 # how many gainers to fetch from the API
-number_of_days_for_fillings = 30 # 
+blocked_dict = dict() # will be of the format {'AMIX':'Blocked','PALI':'blocked'}
+errors = dict() # when there is an error fetching we save the timestamp here 
 currently_running = set() # if something has been notified previously but is currently running we put it here so that we only notified once more 
-running_threshold = 30 #% the percentage over which something is considered running
+
+number_of_days_for_fillings = 30 # 
 gainers_upper_limit = 20  #$ we filter out tickers above 30 dollars 
 gainers_lower_limit = 1 # we filter out penny tickers
-errors = dict() # when there is an error fetching we save the timestamp here 
+running_threshold = 30 # % the percentage over which something is considered running
+number_of_gainers = 150 # how many gainers to fetch from the API
 sleeping_step = 1 # how long the bot sleeps before the next check 
 
 
