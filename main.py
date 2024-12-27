@@ -54,6 +54,8 @@ holiday_closed_list_2025 = [
 ]
 
 blocked_dict = dict() # will be of the format {'AMIX':'2024-03-13','BLOCKED':'BLOCKED'}
+
+number_of_gainers = 150 # how many gainers to fetch from the API
 number_of_days_for_fillings = 30 # 
 currently_running = set() # if something has been notified previously but is currently running we put it here so that we only notified once more 
 running_threshold = 30 #% the percentage over which something is considered running
@@ -292,7 +294,7 @@ async def on_message(ctx):
    
 
 def premarket_gainers(lower_price_limit=gainers_lower_limit,upper_price_limit=gainers_upper_limit): # we filter out tickers than are pennies ( Sub 1 dollar) and mid-large caps ( over 30 dollar which is already high )
-    url = "https://quotes-gw.webullfintech.com/api/bgw/market/topGainers?regionId=6&pageIndex=1&pageSize=150" # the number of tickers is at the end 
+    url = f"https://quotes-gw.webullfintech.com/api/bgw/market/topGainers?regionId=6&pageIndex=1&pageSize={number_of_gainers}" # the number of tickers is at the end 
     headers = {
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36', }
     response = requests.get(url, headers=headers)  # single call so its okay to make in synchronously
@@ -316,7 +318,7 @@ async def fetch_CIK(ticker_dict, session):  # we hit our own API to get the CIK 
     response.raise_for_status()
     api_response = await response.json()
     ticker_dict['CIK'] = api_response['CIK'] # can be None found but that's okay
-    ticker_dict['link'] = api_response.get('link')
+    ticker_dict['link'] = api_response.get('link') # to account for when 'None found' is returned from the API
     return
 
 
