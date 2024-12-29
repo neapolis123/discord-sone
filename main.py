@@ -61,10 +61,9 @@ gainers_upper_limit = 20  #$ we filter out tickers above 30 dollars
 gainers_lower_limit = 1 # we filter out penny tickers
 running_threshold = 30 # % the percentage over which something is considered running
 number_of_days_for_fillings = 30 # how many days back do we look for fillings
-number_of_gainers = 150 # how many gainers to fetch from the API
+number_of_gainers = 200 # how many gainers to fetch from the API
 sleeping_step = 1 # how long the bot sleeps before the next check 
-
-
+concurrent_requests = 8 # how many requests are sent concurrently
 
 
 @bot.event
@@ -245,7 +244,7 @@ async def get_all_fillings(tickers,notified_or_discarded): # tickers is a list o
         'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8,fr;q=0.7',
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
     }
-    conn = aiohttp.TCPConnector(limit_per_host=8)
+    conn = aiohttp.TCPConnector(limit_per_host=concurrent_requests)
     async with aiohttp.ClientSession(headers=headers,connector=conn) as session:
         for ticker_dict in tickers:
             #if ticker_dict['ticker'] not in notified_or_discarded: # doesnt check fillings for already discard or notified tickers 
