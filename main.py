@@ -57,10 +57,10 @@ blocked_dict = dict() # will be of the format {'AMIX':'Blocked','PALI':'blocked'
 errors = dict() # when there is an error fetching we save the timestamp here 
 currently_running = set() # if something has been notified previously but is currently running we put it here so that we only notified once more 
 
-number_of_days_for_fillings = 30 # 
 gainers_upper_limit = 20  #$ we filter out tickers above 30 dollars 
 gainers_lower_limit = 1 # we filter out penny tickers
 running_threshold = 30 # % the percentage over which something is considered running
+number_of_days_for_fillings = 30 # how many days back do we look for fillings
 number_of_gainers = 150 # how many gainers to fetch from the API
 sleeping_step = 1 # how long the bot sleeps before the next check 
 
@@ -152,14 +152,14 @@ async def on_ready():
                  await asyncio.sleep(seconds_until_Monday_4am)
 
         except Exception:
-            #await me.send('Problem encountered in outside the fetch logic: \n' + '```' + traceback.format_exc()[-1700:] + '```' +'\n\nSleeping for 5 mins after failed fetched attempt at ' + datetime.datetime.now(tz=ZoneInfo('America/New_York')).strftime("%H:%M:%S"))
-            print('Problem encountered in outside the fetch logic, Sleeping for 5 mins')
+            print('Problem encountered in outside the fetch logic: \n' + '```' + traceback.format_exc()[-1700:] + '```' +'\n\nSleeping for 5 mins after failed fetched attempt at ' + datetime.datetime.now(tz=ZoneInfo('America/New_York')).strftime("%H:%M:%S"))
+            #print('Problem encountered in outside the fetch logic, Sleeping for 5 mins')
             await asyncio.sleep(60 * 5)
 
 
 async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=number_of_days_for_fillings):  # we hit the SEC API to get the fillings from 30 days that has EFFECT or S-1
     global errors
-    today = datetime.date.today()                             # ticker_dict has format {ticker:AAPL,price:X,gain:Y,CIK:Z}
+    today = datetime.date.today() # ticker_dict has format {ticker:AAPL,price:X,gain:Y,CIK:Z}
     one_month_ago = today - datetime.timedelta(days=days_limit)
     
     if notified_or_discarded.get(ticker_dict['ticker'])=='Blocked' or notified_or_discarded.get(ticker_dict['ticker'])=='IPO': 
