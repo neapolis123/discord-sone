@@ -152,7 +152,7 @@ async def on_ready():
                  await asyncio.sleep(seconds_until_Monday_4am)
 
         except Exception:
-            print('Problem encountered in outside the fetch logic: \n' + '```' + traceback.format_exc()[-1700:] + '```' +'\n\nSleeping for 5 mins after failed fetched attempt at ' + datetime.datetime.now(tz=ZoneInfo('America/New_York')).strftime("%H:%M:%S"))
+            print('Problem encountered in outside the fetch logic: \n' + '```' + traceback.format_exc() + '```' +'\n\nSleeping for 5 mins after failed fetched attempt at ' + datetime.datetime.now(tz=ZoneInfo('America/New_York')).strftime("%H:%M:%S"))
             #print('Problem encountered in outside the fetch logic, Sleeping for 5 mins')
             await asyncio.sleep(60 * 5)
 
