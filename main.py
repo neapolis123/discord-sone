@@ -126,16 +126,16 @@ async def on_ready():
                                await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]}') # doesnt have a filling today
                             previously_notified_or_discarded.update({ticker:info['latest_filling_date']})  # we add the notified tickers to the set to avoid duplicate notifications next iterations , we use update after union since union gives a new copy and update modifies the existing set
                         print('Done sending messages')
-                    print(f'New set of notified/discarded set is {previously_notified_or_discarded}') # we print it here and not inside the previous if to debugg and check that it was cleared after close ( so that each day starts with a an empty set and doesnt carry the notified tickers from yest )
+                    dict_worth_watching and print(f'New set of notified/discarded set is {previously_notified_or_discarded}') # we print it here and not inside the previous if to debugg and check that it was cleared after close ( so that each day starts with a an empty set and doesnt carry the notified tickers from yest )
                     print(f'Sleeping for {sleeping_step} mins starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                     await asyncio.sleep(int(60*sleeping_step))  # every X mins
-                elif nyc_time >= nyc_close_time: # we reset the notified ticker after close
+                elif nyc_time >= nyc_close_time: # we reset the running set after close every day and the notified set every wekk
                     seconds_until_4AM = (60*60*7 + ( (60 - datetime.datetime.now().time().minute) * 60 )+ (60 - datetime.datetime.now().time().second ))
                     print(f'After hours limit, Sleeping for  {str(datetime.timedelta(seconds=seconds_until_4AM))} starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}PM NYC ')
                     #print(f'The Blocked_set is {blocked_dict}, assigned to previously_notified_set') # just to have it visually visible/debug 
                     currently_running = set()
                     await asyncio.sleep(seconds_until_4AM) # sleep just enough to start again at 4AM exactly, we do this by waiting until the hour is ended after the market is closed that is until 21H and then we wait 8 hours from there , we calculate this by taking current minutes and subsracting them from 60 minutes and then multiply by 60 to get how many seconds until the next hours starts
-                elif nyc_time <= start:
+                elif nyc_time <= start: # its before 4 AM but after midnight 
                     current_time_in_seconds = (nyc_time.hour *3600 ) + (nyc_time.minute *60) + nyc_time.second # we convert the time to seconds 
                     seconds_to_4AM = (4*3600) - current_time_in_seconds # we then calculate the difference until 4 AM after changing it to seconds since 3600 seconds per hour so 4 * 3600
                     print(f'Sleeping for {seconds_to_4AM} seconds in Premarket, time is {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
