@@ -63,7 +63,7 @@ running_threshold = 30 # % the percentage over which something is considered run
 number_of_days_for_fillings = 30 # how many days back do we look for fillings
 number_of_gainers = 150 # how many gainers to fetch from the API
 sleeping_step = 1 # how long the bot sleeps before the next check 
-concurrent_requests = 8 # how many requests are sent concurrently
+concurrent_requests = 6 # how many requests are sent concurrently
 
 
 @bot.event
@@ -167,7 +167,15 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
     url = f"https://efts.sec.gov/LATEST/search-index?category=custom%20S-1&ciks={str(ticker_dict['CIK']).zfill(10)}&&forms=F-1%2CF-1MEF%2CS-1%2CS-1MEF&&startdt={one_month_ago.isoformat()}&enddt={today.isoformat()}" #this tries to pull all the S-1, S-1/A, S-1/MEF F-1 and F-1/A/MEF from the last 30 days
     response = await session.get(url,ssl=False)
     if response.status == 403: # sometimes the server just throttles us
-        print(await response.text())
+        #print(await response.text()) 
+        '''<TITLE>Access Denied</TITLE>,
+        </HEAD><BODY>,
+        <H1>Access Denied</H1>
+        You don't have permission to access "http&#58;&#47;&#47;efts&#46;sec&#46;gov&#47;LATEST&#47;search&#45;index&#63;" on this server.<P>
+        Reference&#32;&#35;18&#46;b75e8c4f&#46;1735560147&#46;5d6bc909
+         <P>https&#58;&#47;&#47;errors&#46;edgesuite&#46;net&#47;18&#46;b75e8c4f&#46;1735560147&#46;5d6bc909</P>
+        </BODY>
+        </HTML> '''
         print(f"acccess was denied for ticker {ticker_dict['ticker']} with url: {url} , was skipped") # we print in the console but since we don't check the console all the time
         error_time = datetime.datetime.now(ZoneInfo('Africa/Tunis')) # we snapshot the timestamp
         formated_error_timestamp_tunis_time = str(error_time.date()) + ' ' + str(error_time.strftime("%H:%M")) # format it to be easily readable
