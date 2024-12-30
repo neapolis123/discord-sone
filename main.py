@@ -167,7 +167,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
     url = f"https://efts.sec.gov/LATEST/search-index?category=custom%20S-1&ciks={str(ticker_dict['CIK']).zfill(10)}&&forms=F-1%2CF-1MEF%2CS-1%2CS-1MEF&&startdt={one_month_ago.isoformat()}&enddt={today.isoformat()}" #this tries to pull all the S-1, S-1/A, S-1/MEF F-1 and F-1/A/MEF from the last 30 days
     response = await session.get(url,ssl=False)
     if response.status == 403: # sometimes the server just throttles us
-        print(response.text())
+        print(await response.text())
         print(f"acccess was denied for ticker {ticker_dict['ticker']} with url: {url} , was skipped") # we print in the console but since we don't check the console all the time
         error_time = datetime.datetime.now(ZoneInfo('Africa/Tunis')) # we snapshot the timestamp
         formated_error_timestamp_tunis_time = str(error_time.date()) + ' ' + str(error_time.strftime("%H:%M")) # format it to be easily readable
