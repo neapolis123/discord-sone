@@ -40,7 +40,6 @@ intents.message_content = True
 bot = commands.Bot(command_prefix='/',intents=intents)
 
 holiday_closed_list_2025 = [
-    '2024-12-25'
     '2025-01-01',
     '2025-01-20',
     '2025-02-17',
@@ -57,7 +56,7 @@ blocked_dict = dict() # will be of the format {'AMIX':'Blocked','PALI':'blocked'
 errors = dict() # when there is an error fetching we save the timestamp here 
 currently_running = set() # if something has been notified previously but is currently running we put it here so that we only notified once more 
 
-gainers_upper_limit = 20  #$ we filter out tickers above 30 dollars 
+gainers_upper_limit = 25  #$ we filter out tickers above 30 dollars 
 gainers_lower_limit = 1 # we filter out penny tickers
 running_threshold = 30 # % the percentage over which something is considered running
 number_of_days_for_fillings = 30 # how many days back do we look for fillings
