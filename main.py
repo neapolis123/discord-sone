@@ -127,7 +127,7 @@ async def on_ready():
                             previously_notified_or_discarded.update({ticker:info['latest_filling_date']})  # we add the notified tickers to the set to avoid duplicate notifications next iterations , we use update after union since union gives a new copy and update modifies the existing set
                         print('Done sending messages')
                     dict_worth_watching and print(f'New set of notified/discarded set is {previously_notified_or_discarded}') # we print it here and not inside the previous if to debugg and check that it was cleared after close ( so that each day starts with a an empty set and doesnt carry the notified tickers from yest )
-                    print(f'Sleeping for {sleeping_step} mins starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
+                    print(f'Sleeping for {sleeping_step} min{"s" if sleeping_step>1 else ""} starting at {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                     await asyncio.sleep(int(60*sleeping_step))  # every X mins
                 elif nyc_time >= nyc_close_time: # we reset the running set after close every day and the notified set every wekk
                     seconds_until_4AM = (60*60*7 + ( (60 - datetime.datetime.now().time().minute) * 60 )+ (60 - datetime.datetime.now().time().second ))
@@ -138,7 +138,7 @@ async def on_ready():
                 elif nyc_time <= start: # its before 4 AM but after midnight 
                     current_time_in_seconds = (nyc_time.hour *3600 ) + (nyc_time.minute *60) + nyc_time.second # we convert the time to seconds 
                     seconds_to_4AM = (4*3600) - current_time_in_seconds # we then calculate the difference until 4 AM after changing it to seconds since 3600 seconds per hour so 4 * 3600
-                    print(f'Sleeping for {seconds_to_4AM} seconds in Premarket, time is {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
+                    print(f'Sleeping for {seconds_to_4AM} seconds in Premarket, the time is {datetime.datetime.now(tz=ZoneInfo("America/New_York")).strftime("%H:%M:%S")}')
                     await asyncio.sleep(seconds_to_4AM)  # sleep for an hour since it's probably Before 4:XX AM 
             else: # its the weekend
                  now  = datetime.datetime.now(tz=ZoneInfo("America/New_York"))
