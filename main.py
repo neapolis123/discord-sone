@@ -61,9 +61,9 @@ gainers_upper_limit = 20  #$ we filter out tickers above 30 dollars
 gainers_lower_limit = 1 # we filter out penny tickers
 running_threshold = 30 # % the percentage over which something is considered running
 number_of_days_for_fillings = 30 # how many days back do we look for fillings
-number_of_gainers = 150 # how many gainers to fetch from the API
+number_of_gainers = 150 # how many gainers to fetch from the API (150 is optimal to not get rate limited by the SEC server)
 sleeping_step = 1 # how long the bot sleeps before the next check 
-concurrent_requests = 6 # how many requests are sent concurrently
+concurrent_requests = 6 # how many requests are sent concurrently (6-8 optimal)
 
 
 @bot.event
