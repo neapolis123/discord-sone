@@ -69,7 +69,7 @@ concurrent_requests = 6 # how many requests are sent concurrently (6-8 optimal)
 @bot.event
 async def on_ready():
     #channel = bot.get_channel(1306738767280738354) good to keep if i decide to change from DMS to channels posting
-    global currently_running
+    global currently_running,previously_notified_or_discarded
     me = await bot.fetch_user(253660472803328002) # my discord id 
     start = datetime.time.fromisoformat('04:00:00')
     nyc_close_time = datetime.time.fromisoformat('20:00:00')
