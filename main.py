@@ -335,10 +335,11 @@ async def add_CIKs(tickers):  # tickers is a list of dicts of the form [{'ticker
         conn = aiohttp.TCPConnector(limit_per_host=5,limit=30)
         async with aiohttp.ClientSession(connector=conn) as session:  # we keep the same session for all the requests and pass it on to the individual calls
             for ticker_dict in tickers:  #
-                tasks.append(fetch_CIK(ticker_dict, session))  # assembles all the tasks and then triggers them with asyncio.gather
+                tasks.append(fetch_CIK(ticker_dict, session))  # assembles all the tasks and then triggers them with asyncio.gather, this doesn't return anything but changes the passed ticker_dict
             start = t.time()
-            results = await asyncio.gather(*tasks)
+            results = await asyncio.gather(*tasks) # returns nothing since we update the dicts that are passed as arguments
             print(f'Time to get all the CIKs {t.time() - start } s')
+            tickers = [ticker for ticker in tickers if ticker['CIK'] != 'None Found'] # Eliminiates tickers that don't have a CIK 
             for ticker in tickers:
                 print(('['+ticker['ticker']+']').ljust(7), (str(ticker['gain']) + '%').ljust(4),(str(ticker['price'])+'$').ljust(4) , ticker['link'])
             return tickers
