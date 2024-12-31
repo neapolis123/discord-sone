@@ -52,6 +52,7 @@ holiday_closed_list_2025 = [
     '2025-12-25'
 ]
 
+previously_notified_or_discarded = dict() # will be of the format {'AMIX':'2024-03-13','FPAY':'2023-09-09','UNTZ':'IPO'}
 blocked_dict = dict() # will be of the format {'AMIX':'Blocked','PALI':'blocked'}
 errors = dict() # when there is an error fetching we save the timestamp here 
 currently_running = set() # if something has been notified previously but is currently running we put it here so that we only notified once more 
@@ -74,7 +75,6 @@ async def on_ready():
     nyc_close_time = datetime.time.fromisoformat('20:00:00')
     await me.send('Starting\n')
     iteration = 0
-    previously_notified_or_discarded = dict() # will be of the format {'AMIX':'2024-03-13','FPAY':'2023-09-09','UNTZ':'IPO'}
     while (True):
         try:
             nyc_date = datetime.datetime.now(tz=ZoneInfo('America/New_York'))
@@ -160,8 +160,9 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
     today = datetime.date.today() # ticker_dict has format {ticker:AAPL,price:X,gain:Y,CIK:Z}
     one_month_ago = today - datetime.timedelta(days=days_limit)
     
-    if notified_or_discarded.get(ticker_dict['ticker'])=='Blocked' or notified_or_discarded.get(ticker_dict['ticker'])=='IPO': 
-        return
+    ''' we already filtered for both of these in the fetch_CIK function; good to keep for redundancy'''
+    #if notified_or_discarded.get(ticker_dict['ticker'])=='Blocked' or notified_or_discarded.get(ticker_dict['ticker'])=='IPO': #we filter in the CIK fetching phase for blocked ones, i.e manually blocked tickers wont be checked for newer fillings
+    #   return
     
     url = f"https://efts.sec.gov/LATEST/search-index?category=custom%20S-1&ciks={str(ticker_dict['CIK']).zfill(10)}&&forms=F-1%2CF-1MEF%2CS-1%2CS-1MEF&&startdt={one_month_ago.isoformat()}&enddt={today.isoformat()}" #this tries to pull all the S-1, S-1/A, S-1/MEF F-1 and F-1/A/MEF from the last 30 days
     response = await session.get(url,ssl=False)
@@ -309,8 +310,8 @@ def premarket_gainers(lower_price_limit=gainers_lower_limit,upper_price_limit=ga
     tickers = list()
     for ticker in data['data']:
         info = ticker['ticker']
-        lean_ticker = info['symbol']
-        if ' ' in lean_ticker:  # sometimes a symbol like GTN-A is writen by the API as GTN A, so we eliminite all weird looking symbols
+        lean_ticker = info['symbol'] # upper case AAPL
+        if ' ' in lean_ticker or  lean_ticker in blocked_dict.keys() or previously_notified_or_discarded.get(lean_ticker)=='IPO' : # we filter out IPOs and manually blocked tickers from getting sent to the fillings stage
             continue
         gain = int(float(info['changeRatio']) * 100)
         price = int(float(ticker['values']['price'])) # will be rounded down, 1.4 will be 1 and 2.6 will be 2 as an int
