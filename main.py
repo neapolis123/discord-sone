@@ -89,7 +89,7 @@ async def on_ready():
                     iteration += 1
                     print(iteration)
                     dict_worth_watching = {}
-                    previously_notified_or_discarded.update(blocked_dict) #adds the new blocked dict to the current discarded/notifie, we do it here , might be inefficient but this way the blocked tickers are added one iteration later intead of one day later at close
+                    #previously_notified_or_discarded.update(blocked_dict) #adds the new blocked dict to the current discarded/notifie, we do it here , might be inefficient but this way the blocked tickers are added one iteration later intead of one day later at close
                     try:  #the previously_notified dict here is updated inside play to add IPOs and Reselling Shareholders S-1s, its shared between the inner logic and this outer logic , it is reset at the end of every day
                       #the core of our logic is done inside this function
                         tickers_without_cik = premarket_gainers()
@@ -311,7 +311,7 @@ def premarket_gainers(lower_price_limit=gainers_lower_limit,upper_price_limit=ga
     for ticker in data['data']:
         info = ticker['ticker']
         lean_ticker = info['symbol'] # upper case AAPL
-        if ' ' in lean_ticker or  lean_ticker in blocked_dict.keys() or previously_notified_or_discarded.get(lean_ticker)=='IPO' : # we filter out IPOs and manually blocked tickers from getting sent to the fillings stage
+        if ' ' in lean_ticker or lean_ticker in blocked_dict.keys() or previously_notified_or_discarded.get(lean_ticker)=='IPO' : # we filter out IPOs and manually blocked tickers from getting sent to the fillings stage
             continue
         gain = int(float(info['changeRatio']) * 100)
         price = int(float(ticker['values']['price'])) # will be rounded down, 1.4 will be 1 and 2.6 will be 2 as an int
