@@ -280,7 +280,7 @@ async def on_message(ctx):
             if command == 'LIST':
                 await ctx.channel.send(blocked_dict)
             elif command == 'CLEAR':             
-                blocked_dict= set()                          # worth noting that all modifications to the blocked set are only applied the next day
+                blocked_dict= dict()                          # worth noting that all modifications to the blocked set are only applied the next day
                 await ctx.channel.send('Cleared the set')
             elif command == 'ERRORS':
                 if len(errors) :
