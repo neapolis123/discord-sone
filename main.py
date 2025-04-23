@@ -71,11 +71,14 @@ async def on_ready():
     #channel = bot.get_channel(1364560321745915904) #good to keep if i decide to change from DMS to channels posting
     global currently_running,previously_notified_or_discarded
     me = await bot.fetch_user(253660472803328002) # my discord id 
-    gay_tiago = await bot.fetch_user(329768557128712203) 
+    print(me)
+    gay_tiago = await bot.fetch_user(329768557128712203) # gay ass syrian rat 
+    print(gay_tiago)
     start = datetime.time.fromisoformat('04:00:00')
     nyc_close_time = datetime.time.fromisoformat('20:00:00')
     await me.send('Starting\n')
     await gay_tiago.send('Starting\n')
+    print('hey')
     iteration = 0
     while (True):
         try:
@@ -363,3 +366,4 @@ async def bot_start():
 
 if __name__ == '__main__':
     asyncio.run(bot_start())
+
