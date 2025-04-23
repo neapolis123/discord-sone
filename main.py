@@ -68,12 +68,14 @@ concurrent_requests = 6 # how many requests are sent concurrently (6-8 optimal)
 
 @bot.event
 async def on_ready():
-    channel = bot.get_channel(1364560321745915904) #good to keep if i decide to change from DMS to channels posting
+    #channel = bot.get_channel(1364560321745915904) #good to keep if i decide to change from DMS to channels posting
     global currently_running,previously_notified_or_discarded
-    #me = await bot.fetch_user(253660472803328002) # my discord id 
+    me = await bot.fetch_user(253660472803328002) # my discord id 
+    gay_tiago = await bot.fetch_user(329768557128712203) 
     start = datetime.time.fromisoformat('04:00:00')
     nyc_close_time = datetime.time.fromisoformat('20:00:00')
-    await channel.send('Starting\n')
+    await me.send('Starting\n')
+    await gay_tiago.send('Starting\n')
     iteration = 0
     while (True):
         try:
@@ -110,8 +112,10 @@ async def on_ready():
                                 #if ticker in previously_notified_or_discarded.keys():
                                     if info['latest_filling_date'] == str(nyc_date.date()) :
                                         await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Is currently running + filling today')
+                                        await gay_tiago.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Is currently running + filling today')
                                     else:
                                         await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Is currently running with a filling')
+                                        await gay_tiago.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Is currently running with a filling')    
                                 #else:  
                                 #    if info['latest_filling_date'] == str(datetime.datetime.today().date()) :
                                 #        await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Is currently running + filling today')
@@ -120,9 +124,11 @@ async def on_ready():
                                     currently_running.add(ticker) # to avoid to be notified on every iteration, will be used in get_filling() to filter out previously notified tickers 
                                     print(f'the currently running set is : {currently_running}')
                             elif info['latest_filling_date'] == str(nyc_date.date()): # this checks if it has a filling today, quality of life to avoid opening everyday when something is relevant over multiple days but awaiting an amendment
-                               await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Has a filling today') 
+                               await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Has a filling today')
+                               await gay_tiago.send(f'- [{ticker}]({info["link"]}) ${info["price"]} - Has a filling today')     
                             else:
                                await me.send(f'- [{ticker}]({info["link"]}) ${info["price"]}') # doesnt have a filling today
+                               await gay_tiago.send(f'- [{ticker}]({info["link"]}) ${info["price"]}') # doesnt have a filling today     
                             previously_notified_or_discarded.update({ticker:info['latest_filling_date']})  # we add the notified tickers to the set to avoid duplicate notifications next iterations , we use update after union since union gives a new copy and update modifies the existing set
                         print('Done sending messages')
                     dict_worth_watching and print(f'New set of notified/discarded set is {previously_notified_or_discarded}') # we print it here and not inside the previous if to debugg and check that it was cleared after close ( so that each day starts with a an empty set and doesnt carry the notified tickers from yest )
