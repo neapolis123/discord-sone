@@ -12,6 +12,9 @@ headers =  {
         'sec-fetch-user': '?1',
         'upgrade-insecure-requests': '1',
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
+        'User-Agent':'Rubicon Technologies FZE khalilayari.jr@gmail.com',
+        'Accept-Encoding':'gzip, deflate',
+        'Host':'www.sec.gov'
         }
 
 # https://www.youtube.com/watch?v=nFn4_nA_yk8&t=786s&ab_channel=PatrickCollins explains the asyncio principle
@@ -63,7 +66,7 @@ running_threshold = 40 # % the percentage over which something is considered run
 number_of_days_for_fillings = 30 # how many days back do we look for fillings
 number_of_gainers = 120 # how many gainers to fetch from the API (150 is optimal to not get rate limited by the SEC server)
 sleeping_step = 1 # float, how long the bot sleeps before the next check 
-concurrent_requests = 6 # how many requests are sent concurrently (6-8 optimal)
+concurrent_requests = 5 # how many requests are sent concurrently (6-8 optimal)
 
 
 @bot.event
