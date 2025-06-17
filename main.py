@@ -328,7 +328,7 @@ def premarket_gainers(lower_price_limit=gainers_lower_limit,upper_price_limit=ga
             continue
         gain = int(float(info['changeRatio']) * 100)
         price = int(float(ticker['values']['price'])) # will be rounded down, 1.4 will be 1 and 2.6 will be 2 as an int
-        if (price > lower_price_limit and price < upper_price_limit): # excluse to make sure tickers with 1.X format dont get detected, to be determined if this good or not
+        if (price >= lower_price_limit and price < upper_price_limit): # excluse to make sure tickers with 1.X format dont get detected, to be determined if this good or not
             tickers.append({'ticker': lean_ticker, 'price': price, 'gain': gain})
     #pprint.pprint(tickers)
     return tickers
