@@ -199,7 +199,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
         return
     api_response = await response.json() # an example at https://efts.sec.gov/LATEST/search-index?q=S-1&category=form-cat0&ciks=0001956955&entityName=Unusual%20Machines%2C%20Inc.%20%20(CIK%200001956955)&forms=-3%2C-4%2C-5&startdt=2019-11-29&enddt=2024-11-29
     hits = int(api_response['hits']['total']['value'])
-    forms = api_response['hits']['hits'] # returns a list of  dicts (each dict is a form ) 
+    forms = api_response['hits']['hits'] # returns a list of  dicts (each dict is a form )  
     if(not hits): # this means there is no fillings of this ticker in the past 30 days that has S-1 or EFFECT, equal to 0 if there is none
        return # returns NONE here that gets filtered on the function that called it
     else:  # means it has S-1x fillings, we now check if its an IPO, this step filters S-1 of newly listed tickers 
@@ -207,12 +207,17 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
         url_CERT = f'https://efts.sec.gov/LATEST/search-index?category=custom&ciks={ticker_dict["CIK"]}&forms=CERT&startdt={two_monthes_ago.isoformat()}&enddt={today.isoformat()}' #polls if this is a new listing/IPO by checking for CERT filling last month
         response = await session.get(url_CERT,ssl=False)
         api_response = await response.json()
+        country = api_response['hits']['hits']['_source']['biz_states']
+        if any(x.isdigit() for x in country):
+            print(f'Oriental Ticker {ticker_dict["ticker"]} detected')
+            notified_or_discarded.update({ticker_dict['ticker']:'Oriental'})
+            return
         if int(api_response['hits']['total']['value']):  #its an IPO, discard
             print(f'added {ticker_dict["ticker"]} to the set of discarded_notified because its an IPO')
             notified_or_discarded.update({ticker_dict['ticker']:'IPO'}) # we update the notified_dict with {'UAVS':'2014-12-12'}
             #print(f'notified/discarded set is : {notified_or_discarded}') # for debugging
             return
-
+      
         # if we reach here it means we have good S/F-1x fillings that are NOT an IPO, we now scan the S-1 fillings to check if they are Resale of shareholders 
         
         # this block is a filter that discards previously notified or currently running tickers with no new fillings                 
@@ -235,18 +240,15 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
                     id = form['_id'].split(':')  # form ['id] = "_id": "0001370053-24-000056:anab-formsx3_atm2024.htm" , we split it on the ':' which will be replace with a '/' later
                     filing_number = id[0].replace('-', '')  # we replace the dashes '-' with empty spaces to construct the filling link
                     filling_link = f'https://www.sec.gov/Archives/edgar/data/{int(ticker_dict["CIK"])}/{filing_number}/{id[1]}'
+                    country_inc = form['_source']['biz_states']
                     print(filling_link)
                     filling = await s.get(filling_link,ssl=False)
                     filling_text = await filling.text()
                     filling_text = filling_text.replace('&nbsp;',' ') # to catch example SUBJECT&nbsp;TO&nbsp;COMPLETION ( view-source:https://www.sec.gov/Archives/edgar/data/1874252/000121390024106670/ea0223498-f1a1_mainz.htm) 
                     eliminating_text = ['We will not receive','We will not receive any proceeds from','We will not receive any proceeds from any such sales','will not receive any of the proceeds from sales','will not receive any proceeds from the sale', 'will not receive any proceeds from the resale','will not receive any of the proceeds from the sale','will not receive any of the proceeds from the resale',' will not receive any of the proceeds from these sales','will not receive proceeds from the sale'] # view-source:https://www.sec.gov/Archives/edgar/data/109657/000149315225019296/forms-1.htm
-                    banned_countries = ['China','Hong Kong','Taiwan','Singapore']
                     if 'This page is temporarily unavailable' in filling_text: # checks if the SEC server is down, happenes from time time, in this case we basically reject the ticker so we don't notify every ticker that has S-1
                         print(f"SEC site is down when trying to retreive ticker {ticker_dict['ticker']} with url: {filling_link}")
-                        continue # try with next filling    
-                    if any(x in filling_text for x in banned_countries) : # Filters certain countries out
-                        print(f'Oriental filling found, filling ignored {filling_link}') # for debugging purposes 
-                        continue # we jump to the next filling      
+                        continue # try with next filling      
                     if all(el not in filling_text for el in eliminating_text) : #longer version :'will not receive any proceeds' not in filling_text and 'will not receive any of the proceeds' not in filling_text: # this checks if the S-1/F-1 filling is NOT a shareholders selling filling by checking for the eliminating text
                         if all(x not in filling_text.upper() for x in ['PROSPECTUS IS NOT AN OFFER','SUBJECT TO COMPLETION','SUBJECT\nTO COMPLETION']):# sometimes an annex without the WILL NOT RECEIVE ANY PROCEEDS is filled and its detected as a good filling althought its belongs to a shareholder resale, to make sure we eliminate those we check for string 'SUBJECT TO COMPLETION' , example https://www.sec.gov/Archives/edgar/data/1874252/000121390024107013/ea0224137-f1a2_mainz.htm, sometimes the line is broken after Subject : view-source:https://www.sec.gov/Archives/edgar/data/1729427/000168316825003362/cns_s1a1.htm, example of SUBJECT to completion without prospectus to offer : https://www.sec.gov/Archives/edgar/data/1828673/000119312525116745/d937560ds1.htm 
                             print(f'Annex found with url {filling_link}, filling ignored') # for debugging purposes 
