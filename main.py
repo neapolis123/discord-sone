@@ -207,7 +207,8 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
         url_CERT = f'https://efts.sec.gov/LATEST/search-index?category=custom&ciks={ticker_dict["CIK"]}&forms=CERT&startdt={two_monthes_ago.isoformat()}&enddt={today.isoformat()}' #polls if this is a new listing/IPO by checking for CERT filling last month
         response = await session.get(url_CERT,ssl=False)
         api_response = await response.json()
-        country = api_response['hits']['hits'][0]['_source']['biz_states']
+        print( api_response['hits'] )
+        country = api_response['hits']['hits'][0]['_source']['biz_states'][0]
         if any(x.isdigit() for x in country):
             print(f'Oriental Ticker {ticker_dict["ticker"]} detected')
             notified_or_discarded.update({ticker_dict['ticker']:'Oriental'})
@@ -240,7 +241,6 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
                     id = form['_id'].split(':')  # form ['id] = "_id": "0001370053-24-000056:anab-formsx3_atm2024.htm" , we split it on the ':' which will be replace with a '/' later
                     filing_number = id[0].replace('-', '')  # we replace the dashes '-' with empty spaces to construct the filling link
                     filling_link = f'https://www.sec.gov/Archives/edgar/data/{int(ticker_dict["CIK"])}/{filing_number}/{id[1]}'
-                    country_inc = form['_source']['biz_states']
                     print(filling_link)
                     filling = await s.get(filling_link,ssl=False)
                     filling_text = await filling.text()
