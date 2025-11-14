@@ -207,7 +207,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
         url_CERT = f'https://efts.sec.gov/LATEST/search-index?category=custom&ciks={ticker_dict["CIK"]}&forms=CERT&startdt={two_monthes_ago.isoformat()}&enddt={today.isoformat()}' #polls if this is a new listing/IPO by checking for CERT filling last month
         response = await session.get(url_CERT,ssl=False)
         api_response = await response.json()
-        country = api_response['hits']['hits']['_source']['biz_states']
+        country = api_response['hits']['hits'][0]['_source']['biz_states']
         if any(x.isdigit() for x in country):
             print(f'Oriental Ticker {ticker_dict["ticker"]} detected')
             notified_or_discarded.update({ticker_dict['ticker']:'Oriental'})
