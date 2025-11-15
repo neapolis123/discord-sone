@@ -213,7 +213,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
         api_resp = await country_request.json()
         country = api_resp['addresses']['business']['stateOrCountryDescription'] # edge case for ticker GRRR https://data.sec.gov/submissions/CIK0001903145.json, the response was an empty string '', company changed it's address many times; API taken from website : https://www.sec.gov/edgar/browse/?CIK=1083743&owner=exclude
         banned_countries = ['China','Hong Kong','Singapore','Taiwan','Malaysia'] 
-        country = country or '' : # the stateOrCountryDescription sometimes is null in the json or None after .json() function is applied , so we turn it into an empty string to avoid erros as None is not iterable and would through an exception in the next if 
+        country = country or ''  # the stateOrCountryDescription sometimes is null in the json or None after .json() function is applied , so we turn it into an empty string to avoid erros as None is not iterable and would through an exception in the next if 
         # or returns the fist true value, if none are true it returns the last one , since None is False , this translates to a default empty string '' when the country value is None https://www.geeksforgeeks.org/python/python-empty-string-to-none-conversion/
         if any(x in country for x in banned_country): # this is where we filter out the countries we don't like from the banned list
             print(f'Oriental Ticker {ticker_dict['ticker']} detected from {country}')
@@ -225,7 +225,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
             #print(f'notified/discarded set is : {notified_or_discarded}') # for debugging
             return
       
-        # if we reach here it means we have good S/F-1x fillings that are NOT an IPO, we now scan the S-1 fillings to check if they are Resale of shareholders 
+        # if we reach here it means we have good S/F-1x fillings that are NOT an IPO and are not Oriental, we now scan the S-1 fillings to check if they are Resale of shareholders 
         
         # this block is a filter that discards previously notified or currently running tickers with no new fillings                 
         if  ticker_dict['ticker'] in notified_or_discarded.keys(): # was this ticker previously discarded/notified and NOT and IPO/blocked  
