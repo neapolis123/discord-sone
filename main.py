@@ -177,7 +177,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
     #if notified_or_discarded.get(ticker_dict['ticker'])=='Blocked' or notified_or_discarded.get(ticker_dict['ticker'])=='IPO': #we filter in the premarket gaining phase for blocked ones, i.e manually blocked tickers wont be checked for newer fillings
     #   return
     
-    url = f"https://efts.sec.gov/LATEST/search-index?category=custom%20S-1&ciks={str(ticker_dict['CIK']).zfill(10)}&&forms=F-1%2CF-1MEF%2CS-1%2CS-1MEF&&startdt={one_month_ago.isoformat()}&enddt={today.isoformat()}" #this tries to pull all the S-1, S-1/A, S-1/MEF F-1 and F-1/A/MEF from the last 30 days
+    url = f"https://efts.sec.gov/LATEST/search-index?category=custom%20S-1&ciks={str(ticker_dict['CIK'])}&&forms=F-1%2CF-1MEF%2CS-1%2CS-1MEF&&startdt={one_month_ago.isoformat()}&enddt={today.isoformat()}" #this tries to pull all the S-1, S-1/A, S-1/MEF F-1 and F-1/A/MEF from the last 30 days
     response = await session.get(url,ssl=False)
     if response.status == 403: # sometimes the server just throttles us
         #print(await response.text()) 
@@ -208,10 +208,14 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
         url_CERT = f'https://efts.sec.gov/LATEST/search-index?category=custom&ciks={ticker_dict["CIK"]}&forms=CERT&startdt={two_monthes_ago.isoformat()}&enddt={today.isoformat()}' #polls if this is a new listing/IPO by checking for CERT filling last month
         response = await session.get(url_CERT,ssl=False)
         api_response = await response.json()
-        print(forms[0])
-        country = forms[0]['_source']['biz_states'][0]
-        if any(x.isdigit() for x in country):
-            print(f'Oriental Ticker {ticker_dict["ticker"]} detected')
+        url_country = f'https://data.sec.gov/submissions/CIK{ticker_dict['CIK']}.json' # https://data.sec.gov/submissions/CIK0002019435.json example here, givs us information aboout all the filings and the ticker, we will take the country of incorporation out of this to avoid filters out all counries
+        country_request = await session.get(url_country,ssl=False)   
+        api_resp = await country_request.json()
+        country = api_resp['addresses']['business']['stateOrCountryDescription'] # edge case for ticker GRRR https://data.sec.gov/submissions/CIK0001903145.json, the response was an empty string '', company changed it's address many times; API taken from website : https://www.sec.gov/edgar/browse/?CIK=1083743&owner=exclude
+        banned_countries = ['China','Hong Kong','Singapore','Taiwan','Malaysia']
+        country = country or '' : # the stateOrCountryDescription sometimes is null in the json or None after .json() function is applied , so we turn it into an empty string to avoid erros as None is not iterable and would through an exception in the next if 
+        if any(x in country for x in banned_country): # this is where we filter out the countries we don't like from the banned list
+            print(f'Oriental Ticker {ticker_dict['ticker']} detected from {country}')
             notified_or_discarded.update({ticker_dict['ticker']:'Oriental'})
             return
         if int(api_response['hits']['total']['value']):  #its an IPO, discard
@@ -331,7 +335,7 @@ def premarket_gainers(lower_price_limit=gainers_lower_limit,upper_price_limit=ga
     for ticker in data['data']:
         info = ticker['ticker']
         lean_ticker = info['symbol'] # upper case AAPL
-        if ' ' in lean_ticker or lean_ticker in blocked_dict.keys() or previously_notified_or_discarded.get(lean_ticker)=='IPO' : # we filter out IPOs and manually blocked tickers from getting sent to the fillings stage
+        if ' ' in lean_ticker or lean_ticker in blocked_dict.keys() or previously_notified_or_discarded.get(lean_ticker)=='IPO' or previously_notified_or_discarded.get(lean_ticker)=='Oriental'  : # we filter out IPOs , asian tickers and manually blocked tickers from getting sent to the fillings stage
             continue
         gain = int(float(ticker['values']['changeRatio']) * 100)
         price = int(float(ticker['values']['price'])) # will be rounded down, 1.4 will be 1 and 2.6 will be 2 as an int
