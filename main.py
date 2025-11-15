@@ -208,7 +208,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
         url_CERT = f'https://efts.sec.gov/LATEST/search-index?category=custom&ciks={ticker_dict["CIK"]}&forms=CERT&startdt={two_monthes_ago.isoformat()}&enddt={today.isoformat()}' #polls if this is a new listing/IPO by checking for CERT filling last month
         response = await session.get(url_CERT,ssl=False)
         api_response = await response.json()
-        url_country = f'https://data.sec.gov/submissions/CIK{ticker_dict['CIK']}.json' # https://data.sec.gov/submissions/CIK0002019435.json example here, givs us information aboout all the filings and the ticker, we will take the country of incorporation out of this to avoid filters out all counries
+        url_country = f"https://data.sec.gov/submissions/CIK{ticker_dict['CIK']}.json" # https://data.sec.gov/submissions/CIK0002019435.json example here, givs us information aboout all the filings and the ticker, we will take the country of incorporation out of this to avoid filters out all counries
         country_request = await session.get(url_country,ssl=False)   
         api_resp = await country_request.json()
         country = api_resp['addresses']['business']['stateOrCountryDescription'] # edge case for ticker GRRR https://data.sec.gov/submissions/CIK0001903145.json, the response was an empty string '', company changed it's address many times; API taken from website : https://www.sec.gov/edgar/browse/?CIK=1083743&owner=exclude
