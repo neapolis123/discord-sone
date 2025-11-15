@@ -199,7 +199,6 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
         return
     api_response = await response.json() # an example at https://efts.sec.gov/LATEST/search-index?q=S-1&category=form-cat0&ciks=0001956955&entityName=Unusual%20Machines%2C%20Inc.%20%20(CIK%200001956955)&forms=-3%2C-4%2C-5&startdt=2019-11-29&enddt=2024-11-29
     hits = int(api_response['hits']['total']['value'])
-    print(hits)
     forms = api_response['hits']['hits'] # returns a list of  dicts (each dict is a form )  
     if(not hits): # this means there is no fillings of this ticker in the past 30 days that has S-1 or EFFECT, equal to 0 if there is none
        return # returns NONE here that gets filtered on the function that called it
