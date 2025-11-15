@@ -216,7 +216,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
         country = country or ''  # the stateOrCountryDescription sometimes is null in the json or None after .json() function is applied , so we turn it into an empty string to avoid erros as None is not iterable and would through an exception in the next if 
         # or returns the fist true value, if none are true it returns the last one , since None is False , this translates to a default empty string '' when the country value is None https://www.geeksforgeeks.org/python/python-empty-string-to-none-conversion/
         if any(x in country for x in banned_country): # this is where we filter out the countries we don't like from the banned list
-            print(f'Oriental Ticker {ticker_dict['ticker']} detected from {country}')
+            print(f"Oriental Ticker {ticker_dict['ticker']} detected from {country}")
             notified_or_discarded.update({ticker_dict['ticker']:'Oriental'})
             return
         if int(api_response['hits']['total']['value']):  #its an IPO, discard
