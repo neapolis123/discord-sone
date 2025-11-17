@@ -210,9 +210,10 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
         url_country = f"https://data.sec.gov/submissions/CIK{ticker_dict['CIK']}.json" # https://data.sec.gov/submissions/CIK0002019435.json example here, givs us information aboout all the filings and the ticker, we will take the country of incorporation out of this to avoid filters out all counries
         country_request = await session.get(url_country,ssl=False)   
         api_resp = await country_request.json()
-        country = api_resp['addresses']['business']['stateOrCountryDescription'] # edge case for ticker GRRR https://data.sec.gov/submissions/CIK0001867729.json, the response was an empty string '', company changed it's address many times; API taken from website : https://www.sec.gov/edgar/browse/?CIK=1083743&owner=exclude
+        countryDesc = api_resp['addresses']['business']['stateOrCountryDescription'] # edge case for ticker GRRR https://data.sec.gov/submissions/CIK0001867729.json, the response was an empty string '', company changed it's address many times; API taken from website : https://www.sec.gov/edgar/browse/?CIK=1083743&owner=exclude
+        countrysimple = api_resp['addresses']['business']['country']
         banned_countries = ['China','Hong Kong','Singapore','Taiwan','Malaysia'] 
-        country = country or 'China'  # the stateOrCountryDescription sometimes is null in the json or None after .json() function is applied , so we turn it into an empty string to avoid erros as None is not iterable and would through an exception in the next if 
+        country = countryDesc or countrysimple  # the stateOrCountryDescription sometimes is null in the json or None after .json() function is applied , so we turn it into an empty string to avoid erros as None is not iterable and would through an exception in the next if 
         # or returns the fist true value, if none are true it returns the last one , since None is False , this translates to a default empty string '' when the country value is None https://www.geeksforgeeks.org/python/python-empty-string-to-none-conversion/   
         if any(x in country for x in banned_countries): # this is where we filter out the countries we don't like from the banned list
             print(f"Oriental Ticker {ticker_dict['ticker']} detected from {country}")
