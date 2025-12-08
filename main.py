@@ -204,7 +204,8 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
     try:
         hits = int(api_response['hits']['total']['value'])
     except Exception:
-        print(f'problem in hits with response code {response.status} and {response.text()} at link : {url}')
+        t = await response.text()     
+        print(f'problem in hits with response code {response.status} and {t} at link : {url}')
         raise
     forms = api_response['hits']['hits'] # returns a list of  dicts (each dict is a form )  
     if(not hits): # this means there is no fillings of this ticker in the past 30 days that has S-1 or EFFECT, equal to 0 if there is none
