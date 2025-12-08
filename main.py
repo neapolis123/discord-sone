@@ -197,6 +197,9 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
         errors[formated_error_timestamp_tunis_time]=current_errors+1
         print(f'error timestamp {formated_error_timestamp_tunis_time} incremented to {current_errors+1} ') # we print for debugging
         return
+    if response.status == 500:
+       print(f'Server Internal Error')     
+       return      
     api_response = await response.json() # an example at https://efts.sec.gov/LATEST/search-index?q=S-1&category=form-cat0&ciks=0001956955&entityName=Unusual%20Machines%2C%20Inc.%20%20(CIK%200001956955)&forms=-3%2C-4%2C-5&startdt=2019-11-29&enddt=2024-11-29
     try:
         hits = int(api_response['hits']['total']['value'])
