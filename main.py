@@ -206,7 +206,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
         if code == 500:
            print(f'Server Internal Error at link {url}')       
         else :      
-           print(f'problem in hits with response code {code} and {t} at link : {url}')
+           print(f'Server problem in hits with response code {code} and {t} at link : {url}')
         return 
     forms = api_response['hits']['hits'] # returns a list of  dicts (each dict is a form )  
     if(not hits): # this means there is no fillings of this ticker in the past 30 days that has S-1 or EFFECT, equal to 0 if there is none
@@ -235,7 +235,12 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
               #print(f'notified/discarded set is : {notified_or_discarded}') # for debugging
               return
         except Exception:
-              print(f'Server error with code {response.status} at line 230 with link {url_CERT} ')  
+              code = response.status
+              t = await response.text()  
+              if code == 500:
+                   print(f'Server Internal Error at link {url_CERT}')    
+              else:
+                   print(f'Server problem in hits with response code {code} and {t} at link : {url_CERT} ')  
               return
       
         # if we reach here it means we have good S/F-1x fillings that are NOT an IPO and are not Oriental, we now scan the S-1 fillings to check if they are Resale of shareholders 
