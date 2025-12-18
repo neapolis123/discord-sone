@@ -276,7 +276,10 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
                     if all(el not in filling_text for el in eliminating_text) : #longer version :'will not receive any proceeds' not in filling_text and 'will not receive any of the proceeds' not in filling_text: # this checks if the S-1/F-1 filling is NOT a shareholders selling filling by checking for the eliminating text
                         if all(x not in filling_text.upper() for x in ['PROSPECTUS IS NOT AN OFFER','SUBJECT TO COMPLETION']):# sometimes an annex without the WILL NOT RECEIVE ANY PROCEEDS is filled and its detected as a good filling althought its belongs to a shareholder resale, to make sure we eliminate those we check for string 'SUBJECT TO COMPLETION' , example https://www.sec.gov/Archives/edgar/data/1874252/000121390024107013/ea0224137-f1a2_mainz.htm, sometimes the line is broken after Subject : view-source:https://www.sec.gov/Archives/edgar/data/1729427/000168316825003362/cns_s1a1.htm, example of SUBJECT to completion without prospectus to offer : https://www.sec.gov/Archives/edgar/data/1828673/000119312525116745/d937560ds1.htm 
                             print(f'Annex found with url {filling_link}, filling ignored') # for debugging purposes 
-                            continue # we jump to the next filling  
+                            continue # we jump to the next filling Subscription Rights to Purchase
+                         if 'SUBSCRIPTION RIGHTS TO PURCHASE' in filling_text.upper() :# sometimes we check for a rights offerings if it's not a sellings shareholder or an annex
+                            print(f'Rights offering found with url {filling_link}, filling ignored') # for debugging purposes 
+                            continue # we jump to the next filling Subscription Rights to Purchase 
                         print(f'good filling found on {ticker_dict["ticker"]}') 
                         filling_hyperlink = f'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={ticker_dict["CIK"]}&owner=exclude&count=200'
                         return  {ticker_dict['ticker']: {'link':filling_hyperlink,'price':ticker_dict['price'],'latest_filling_date':latest_filling_date,'gain':ticker_dict['gain']}} # we break here as soon as we find a good one 
