@@ -171,7 +171,8 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
     global errors
     today = datetime.date.today() # ticker_dict has format {ticker:AAPL,price:X,gain:Y,CIK:Z}
     one_month_ago = today - datetime.timedelta(days=days_limit)
-    two_monthes_ago = today - datetime.timedelta(days=60)    
+    two_monthes_ago = today - datetime.timedelta(days=60)
+    
     
     ''' we already filtered for both of these in the premarket gainers function; good to keep for redundancy, only differenec is that if we filter here the IPOS and blocked ones will be printed and passed as opposed to being filtered out in premarket gainers '''
     #if notified_or_discarded.get(ticker_dict['ticker'])=='Blocked' or notified_or_discarded.get(ticker_dict['ticker'])=='IPO': #we filter in the premarket gaining phase for blocked ones, i.e manually blocked tickers wont be checked for newer fillings
@@ -213,7 +214,7 @@ async def get_filling(ticker_dict,session,notified_or_discarded,days_limit=numbe
        return # returns NONE here that gets filtered on the function that called it
     else:  # means it has S-1x fillings, we now check if its an IPO, this step filters S-1 of newly listed tickers 
         latest_filling_date = forms[0]['_source']['file_date'] # this checks the date of the latest filling (they are ordered latest on top), if there is a good filling we involve the latest date and notify it there is a match
-        url_CERT = f'https://efts.sec.gov/LATEST/search-index?category=custom&ciks={ticker_dict["CIK"]}&forms=CERT&startdt={two_monthes_ago.isoformat()}&enddt={today.isoformat()}' #polls if this is a new listing/IPO by checking for CERT filling last month
+        url_CERT = f'https://efts.sec.gov/LATEST/search-index?category=custom&ciks={ticker_dict["CIK"]}&forms=CERT&startdt={one_month_ago.isoformat()}&enddt={today.isoformat()}' #polls if this is a new listing/IPO by checking for CERT filling last month
         response = await session.get(url_CERT,ssl=False)
         api_response = await response.json()
         url_country = f"https://data.sec.gov/submissions/CIK{ticker_dict['CIK']}.json" # https://data.sec.gov/submissions/CIK0002019435.json example here, givs us information aboout all the filings and the ticker, we will take the country of incorporation out of this to avoid filters out all counries
